@@ -4,13 +4,13 @@ from unittest.mock import Mock
 from unittest.mock import MagicMock
 import yaml
 
-import polyinterface
+import udi_interface
 
 from poly.remotedevice import RemoteDevice
 
 sys.stdout = sys.__stdout__
 sys.stderr = sys.__stderr__
-polyinterface.LOGGER.handlers = []
+udi_interface.LOGGER.handlers = []
 
 
 class PolyTester(unittest.TestCase):
@@ -23,22 +23,21 @@ class PolyTester(unittest.TestCase):
     def test_simple(self):
         driver = Mock()
         primaryDevice = Mock()
-        driver.getCommand = MagicMock(
-            return_value=PolyTester.config['simple']['commands']['command1'])
+        poly = Mock()
+        driver.getCommand = MagicMock(return_value=PolyTester.config['simple']['commands']['command1'])
         driver.getData = MagicMock(return_value={})
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device",
-                              PolyTester.config['simple'], driver)
+        device = RemoteDevice(poly, primaryDevice, None, None, None, "test device", PolyTester.config['simple'], driver)
         device.runCmd({'cmd': 'command1'})
         driver.executeCommand.assert_called_with('command1', None)
 
     def test_read_only(self):
         driver = Mock()
         primaryDevice = Mock()
-        driver.getCommand = MagicMock(
-            return_value=PolyTester.config['read_only']['commands']['command3'])
+        poly = Mock()
+        driver.getCommand = MagicMock(return_value=PolyTester.config['read_only']['commands']['command3'])
         driver.getData = MagicMock(return_value={})
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device",
-                              PolyTester.config['read_only'], driver)
+        device = RemoteDevice(poly, primaryDevice, None, None, None, "test device", PolyTester.config['read_only'],
+                              driver)
         device.runCmd({'cmd': 'command3'})
         driver.executeCommand.assert_called_with('command3', None)
         self.assertEqual(device.driverSetters['GV0'], 'command3')
@@ -49,8 +48,7 @@ class PolyTester(unittest.TestCase):
         primaryDevice = Mock()
         driver.getCommand = MagicMock(return_value=None)
         primaryDevice.connected = True
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device",
-                              PolyTester.config['state'], driver)
+        device = RemoteDevice(None, primaryDevice, None, None, None, "test device", PolyTester.config['state'], driver)
         device.runCmd({'cmd': 'command1'})
         driver.executeCommand.assert_called_with('command1', None)
         driver.getData.assert_called_with('command2')
@@ -71,11 +69,9 @@ class PolyTester(unittest.TestCase):
         driver = Mock()
         primaryDevice = Mock()
         data = PolyTester.config['read_only_suffix']['commandGroups']['group1']
-        driver.getCommand = MagicMock(
-            return_value=data['commands']['command1'])
+        driver.getCommand = MagicMock(return_value=data['commands']['command1'])
         driver.getData = MagicMock(return_value={})
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device",
-                              data, driver)
+        device = RemoteDevice(None, primaryDevice, None, None, None, "test device", data, driver)
         device.runCmd({'cmd': 'command1'})
         driver.executeCommand.assert_called_with('command1_r1', None)
         self.assertEqual(device.driverSetters['GV0'], 'command1_r1')
@@ -96,11 +92,9 @@ class PolyTester(unittest.TestCase):
         driver = Mock()
         primaryDevice = Mock()
         data = PolyTester.config['read_only_prefix']['commandGroups']['group1']
-        driver.getCommand = MagicMock(
-            return_value=data['commands']['command1'])
+        driver.getCommand = MagicMock(return_value=data['commands']['command1'])
         driver.getData = MagicMock(return_value={})
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device",
-                              data, driver)
+        device = RemoteDevice(None, primaryDevice, None, None, None, "test device", data, driver)
         device.runCmd({'cmd': 'command1'})
         driver.executeCommand.assert_called_with('r1_command1', None)
         self.assertEqual(device.driverSetters['GV0'], 'r1_command1')
@@ -112,8 +106,7 @@ class PolyTester(unittest.TestCase):
         primaryDevice = Mock()
         driver.getCommand = MagicMock(return_value=None)
         primaryDevice.connected = True
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device",
-                              PolyTester.config['state'], driver)
+        device = RemoteDevice(None, primaryDevice, None, None, None, "test device", PolyTester.config['state'], driver)
         device.runCmd({'cmd': 'command1'})
         driver.executeCommand.assert_called_with('command1', None)
         driver.getData.assert_not_called()

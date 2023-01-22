@@ -1,15 +1,11 @@
 import time
-
-from polyinterface import LOGGER
-from polyinterface import Node
+from udi_interface import LOGGER, Node
 
 
 class RemoteDevice(Node):
 
-    def __init__(self, controller, primaryDevice, primary, address, driverName,
-        deviceName, config, deviceDriver):
-        super(RemoteDevice, self).__init__(controller, primary,
-            address, deviceName)
+    def __init__(self, controller, primaryDevice, primary, address, driverName, deviceName, config, deviceDriver):
+        super(RemoteDevice, self).__init__(controller, primary, address, deviceName)
 
         self.id = driverName
 
@@ -32,15 +28,15 @@ class RemoteDevice(Node):
                 })
                 if command is not None and command.get('readOnly', False):
                     self.driverSetters[polyData['driver']['name']] = self.prefix + commandName + self.suffix
-                elif 'input' in polyData['driver'] and deviceDriver.hasCommand(self.prefix + polyData['driver']['input'] + self.suffix):
-                    self.driverSetters[polyData['driver']['name']] = self.prefix + polyData['driver']['input'] + self.suffix
+                elif 'input' in polyData['driver'] and deviceDriver.hasCommand(self.prefix +
+                                                                               polyData['driver']['input'] +
+                                                                               self.suffix):
+                    self.driverSetters[polyData['driver']
+                                       ['name']] = self.prefix + polyData['driver']['input'] + self.suffix
 
-            if (not commandData.get('result') and
-                not commandData.get('acceptsNumber') and
-                not commandData.get('acceptsHex') and
-                not commandData.get('acceptsPct') and
-                not commandData.get('acceptsFloat') and
-                'value_set' not in commandData):
+            if (not commandData.get('result') and not commandData.get('acceptsNumber') and
+                    not commandData.get('acceptsHex') and not commandData.get('acceptsPct') and
+                    not commandData.get('acceptsFloat') and 'value_set' not in commandData):
                 self.command_list.append(commandName)
 
         hint = config['poly'].get('hint')
@@ -59,8 +55,7 @@ class RemoteDevice(Node):
     def execute_command(self, command):
         try:
             LOGGER.debug('Device %s executing command %s', self.name, command['cmd'])
-            self.deviceDriver.executeCommand(self.prefix + command['cmd'] + self.suffix,
-                command.get('value'))
+            self.deviceDriver.executeCommand(self.prefix + command['cmd'] + self.suffix, command.get('value'))
             time.sleep(1)
             self.refresh_state()
         except:
