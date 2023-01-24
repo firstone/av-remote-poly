@@ -3,12 +3,11 @@ from poly.remotedevice import RemoteDevice
 
 class PrimaryRemoteDevice(RemoteDevice):
 
-    drivers = [ {'driver': 'ST', 'value': 0, 'uom': 2} ]
+    drivers = [{'driver': 'ST', 'value': 0, 'uom': 2}]
 
-    def __init__(self, controller, address, driverName, deviceName,
-        config, deviceDriver):
-        super(PrimaryRemoteDevice, self).__init__(controller, self, address,
-            address, driverName, deviceName, config, deviceDriver)
+    def __init__(self, polyglot, address, driverName, deviceName, config, deviceDriver):
+        super(PrimaryRemoteDevice, self).__init__(polyglot, self, address, address, driverName, deviceName, config,
+                                                  deviceDriver)
         self.connected = False
 
     def start(self):

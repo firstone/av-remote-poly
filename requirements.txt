@@ -1,4 +1,4 @@
-adb_shell>=0.4.3
+adb_shell[async]>=0.4.3
 flask>=0.12.2
 pyyaml>=3.12
 pychromecast>=12.1.3

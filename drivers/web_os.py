@@ -9,8 +9,8 @@ from drivers.base_driver import BaseDriver
 
 class WebOS(BaseDriver):
 
-    def __init__(self, config, logger, use_numeric_key=False):
-        super(WebOS, self).__init__(config, logger, use_numeric_key)
+    def __init__(self, controller, config, logger, use_numeric_key=False):
+        super(WebOS, self).__init__(controller, config, logger, use_numeric_key)
         self.connectEvent = Event()
         self.curID = 0
         self.callbacks = {}
@@ -26,16 +26,14 @@ class WebOS(BaseDriver):
 
     def saveClientKey(self):
         with open(self.config['clientKeyFile'], 'w') as clientKeyOutput:
-            yaml.safe_dump(self.clientKey, clientKeyOutput, allow_unicode=True,
-                           encoding='utf-8')
+            yaml.safe_dump(self.clientKey, clientKeyOutput, allow_unicode=True, encoding='utf-8')
             clientKeyOutput.close()
 
     def on_open(self):
         self.connected = True
         if self.clientKey:
             self.config['registerCommand'].update(self.clientKey)
-        self.sendCommandRaw('register', self.config['registerCommand'], None,
-                            False)
+        self.sendCommandRaw('register', self.config['registerCommand'], None, False)
 
     def on_close(self, code, reason=None):
         self.connected = False
@@ -65,15 +63,14 @@ class WebOS(BaseDriver):
                     self.client.close()
                 except:
                     pass
-            self.client = WebSocketClient("ws://" + self.config['hostName'] + ':' +
-                                          str(self.config['port']),  exclude_headers=["Origin"])
+            self.client = WebSocketClient("ws://" + self.config['hostName'] + ':' + str(self.config['port']),
+                                          exclude_headers=["Origin"])
             self.client.opened = self.on_open
             self.client.closed = self.on_close
             self.client.received_message = self.on_message
             self.client.sock.settimeout(self.config['timeout'])
             self.client.connect()
-            self.connectEvent.wait(self.config['timeout']
-                                   if self.clientKey else self.config['promptTimeout'])
+            self.connectEvent.wait(self.config['timeout'] if self.clientKey else self.config['promptTimeout'])
         except:
             pass
 
@@ -81,8 +78,7 @@ class WebOS(BaseDriver):
         if commandName == 'power_on':
             mac = self.config.get('mac')
             if mac is None:
-                self.logger.error(
-                    'Error sending power on command. MAC is not set up')
+                self.logger.error('Error sending power on command. MAC is not set up')
             else:
                 ip = self.config.get('broadcastAddress')
                 if ip == '':
@@ -93,8 +89,7 @@ class WebOS(BaseDriver):
                 wakeonlan.send_magic_packet(mac, ip_address=ip)
             return ''
         elif commandName == 'toggle_mute':
-            output = self.sendCommandRaw(
-                'status', self.config['commands']['status'])
+            output = self.sendCommandRaw('status', self.config['commands']['status'])
 
             if 'error' in output:
                 return output
@@ -106,8 +101,7 @@ class WebOS(BaseDriver):
             try:
                 self.connect()
             except:
-                raise Exception('Driver ' + __name__ +
-                                ' cannot connect to device')
+                raise Exception('Driver ' + __name__ + ' cannot connect to device')
 
         message = {}
         id = str(self.curID)
@@ -125,8 +119,8 @@ class WebOS(BaseDriver):
         argData = None
         if args is not None:
             if not argKey:
-                raise Exception('Command in ' + __name__ +
-                                ': ' + commandName + ' isn''t configured for arguments')
+                raise Exception('Command in ' + __name__ + ': ' + commandName + ' isn'
+                                't configured for arguments')
 
             argData = {argKey: args}
 
@@ -140,10 +134,7 @@ class WebOS(BaseDriver):
         self.client.send(json.dumps(message))
         self.curID += 1
         event = Event()
-        callback = {
-            'event': event,
-            'data': {}
-        }
+        callback = {'event': event, 'data': {}}
 
         self.callbacks[id] = callback
 
@@ -157,10 +148,8 @@ class WebOS(BaseDriver):
         if 'argKey' in command:
             payload = result['output'].get('payload')
             if not payload:
-                self.logger.warning("Missing payload for command %s: %s",
-                                    commandName, result['output'])
+                self.logger.warning("Missing payload for command %s: %s", commandName, result['output'])
                 return
             param = payload.get(command['argKey'])
             if param is not None:
-                result['result'] = self.paramParser.translate_param(
-                    command, param)
+                result['result'] = self.paramParser.translate_param(command, param)

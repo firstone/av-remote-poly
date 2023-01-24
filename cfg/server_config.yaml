@@ -7,7 +7,6 @@ controller:
 drivers:
   android:
     description: nVidia Shield
-    executable: adb
     poly:
       hint: [1, 6, 7, 0]
     parameters:
@@ -25,16 +24,12 @@ drivers:
         type: NUMBER
     values:
       activities:
-        - value: dashboard
-          param: com.google.android.leanbacklauncher
-        - value: spmc
-          param: com.semperpax.spmc16
-        - value: kodi
-          param: org.xbmc.kodi
-        - value: netflix
-          param: com.netflix.ninja
-        - value: etv
-          param: com.etvnet.etvnetandroidapp
+        - value: Dashboard
+          param: com.google.android.tvlauncher
+        - value: Screen Saver
+          param: com.google.android.backdrop
+        - value: Wallpaper
+          param: com.android.systemui.ImageWallpaper
     commandGroups:
       navigation:
         commands:
@@ -94,10 +89,6 @@ drivers:
             code: 274
           info:
             code: 165
-      setup:
-        commands:
-          get_app_list:
-            result: true
       inputs:
         commands:
           get_current_activity:
@@ -105,16 +96,14 @@ drivers:
             result: true
           start_app:
             values:
-              - value: dashboard
+              - value: Dashboard
                 param: com.google.android.leanbacklauncher/.MainActivity
-              - value: spmc
-                param: com.semperpax.spmc16/.Splash
-              - value: kodi
-                param: org.xbmc.kodi/.Splash
-              - value: netflix
-                param: com.netflix.ninja/.MainActivity
-              - value: etv
-                param: com.etvnet.etvnetandroidapp/.MainActivity
+              - value: Screen Saver
+                param: com.google.android.backdrop/.MainActivity
+              - value: Wallpaper
+                param: ''
+          get_app_list:
+            customCommand: true
       keyboard:
         commands:
           send_key:

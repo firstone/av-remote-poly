@@ -1,88 +1,156 @@
-import subprocess
+from adb_shell.adb_device_async import AdbDeviceTcpAsync
+from adb_shell.auth.sign_pythonrsa import PythonRSASigner
+from adb_shell.auth.keygen import keygen
+import asyncio
+import os
 
 from drivers.base_driver import BaseDriver
 
 
 class Android(BaseDriver):
 
-    ACTIVITY_RECORD = 'ActivityRecord'
+    WINDOW_RECORD = 'Window '
+    ON_SCREEN_RECORD = 'isOnScreen=true'
+    KEY_FILE_NAME = '.androidKey'
+    TRANSPORT_TIMEOUT = 30
+    AUTH_TIMEOUT = 60
+    AAPT_FILE_NAME = 'aapt-arm-pie'
+    AAPT_FULL_NAME = '/data/local/tmp/' + AAPT_FILE_NAME
 
-    def __init__(self, config, logger, use_numeric_key=False):
-        super(Android, self).__init__(config, logger, use_numeric_key)
+    def __init__(self, controller, config, logger, use_numeric_key=False):
+        super(Android, self).__init__(controller, config, logger, use_numeric_key)
 
-        self.executable = config['executable']
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
 
         logger.info('Loaded %s driver', __name__)
 
-    def connect(self):
-        self.logger.debug('ADB status %s', subprocess.check_output(
-            [self.executable, 'connect', self.connectionDescription]).decode())
-        output = subprocess.check_output([self.executable, 'devices']).decode().split('\n')
-        for line in output:
-            if line.startswith(self.connectionDescription):
-                if line.split('\t')[1] == 'device':
-                    self.connected = True
-                    return
+    def init_signer(self):
+        if not os.path.isfile(Android.KEY_FILE_NAME):
+            keygen(Android.KEY_FILE_NAME)
 
-        raise IOError('Connection to ' + self.connectionDescription +
-            ' failed. If device is accessible, try restarting it')
+        with open(Android.KEY_FILE_NAME, 'r') as f:
+            priv = f.read()
+
+        with open(Android.KEY_FILE_NAME + '.pub', 'r') as f:
+            pub = f.read()
+
+        self.signer = PythonRSASigner(pub, priv)
+
+        # Connect
+
+    def connect(self):
+        self.init_signer()
+
+        async def do_connect():
+            self.device = AdbDeviceTcpAsync(self.config['hostName'],
+                                            self.config['port'],
+                                            default_transport_timeout_s=Android.TRANSPORT_TIMEOUT)
+            await self.device.connect(rsa_keys=[self.signer], auth_timeout_s=Android.AUTH_TIMEOUT)
+            if self.device.available:
+                self.connected = True
+
+        self.loop.run_until_complete(do_connect())
 
     def sendCommandRaw(self, commandName, command, args=None):
         if not self.connected:
             self.connect()
 
-        if commandName == 'start_app':
-            result = subprocess.check_output([self.executable, 'shell', 'am',
-                'start', '-n', args]).decode()
-        elif commandName == 'get_app_list':
-            result = self.getCommandList()
-        elif commandName == 'get_current_activity':
-            result = self.getCurrentActivity()
+        f = getattr(self, commandName)
+        if f is not None:
+            result = self.loop.run_until_complete(f(args))
         else:
             code = args if args else self.config['commands'][commandName]['code']
-            result = subprocess.check_output([self.executable, 'shell', 'input',
-                'keyevent', str(code)]).decode()
+            result = self.device.shell(f'input keyevent {code}')
 
         return result
 
-    def getCurrentActivity(self):
-        output = subprocess.check_output([self.executable, 'shell', 'dumpsys',
-            'window', 'windows']).decode().split('\n')
-        for line in output:
-            pos = line.find('mFocusedApp')
+    async def start_app(self, args):
+        return await self.device.shell(f'am start -n {args}')
+
+    async def check_file(self, file_name):
+        output = await self.device.shell(f'ls -la {file_name}')
+        return output.split('\n')[0].find('No such file or directory') < 0
+
+    async def upload_file(self, file_name, remote_file):
+        await self.device.push(file_name, remote_file)
+        await self.device.shell(f'chmod 0755 {remote_file}')
+
+    async def get_current_activity(self, _):
+        output = await self.device.shell(f'dumpsys window windows')
+        # self.logger.debug(output)
+        for line in output.split('\n'):
+            pos = line.find(Android.WINDOW_RECORD)
             if pos > 0:
-                pos = line.find(Android.ACTIVITY_RECORD)
-                if pos > 0:
-                    values = line[pos + len(Android.ACTIVITY_RECORD):].split(' ')
-                    return values[2].split('/')[0]
+                window_record = line.strip()
+
+            pos = line.find(Android.ON_SCREEN_RECORD)
+            if pos > 0:
+                values = window_record.split(' ')
+                activity = values[4][:-2].split('/')[0]
+                self.logger.debug(f'current activtty {activity}')
+                return activity
 
         return ''
 
-    def getCommandList(self):
+    async def get_app_list(self, _):
         if not self.connected:
             self.connect()
 
-        output = subprocess.check_output([self.executable, 'shell', 'pm', 'list',
-            'packages', '-f']).decode().split('\n')
-        appList = []
-        for line in output:
-            pos = line.find('=')
-            if pos > 0:
-                appList.append({
-                    'appName': line[pos + 1:],
-                    'activity': []
-                })
+        if await self.check_file(Android.AAPT_FULL_NAME):
+            self.logger.debug('aapt file presend')
+        else:
+            self.logger.debug('Uploading aapt file')
+            await self.upload_file(Android.AAPT_FILE_NAME, Android.AAPT_FULL_NAME)
 
-        for appInfo in appList:
-            self.logger.debug("Processing %s app", appInfo['appName'])
-            output = subprocess.check_output([self.executable, 'shell', 'pm',
-                'dump', appInfo['appName']]).decode().split('\n')
-            for index, line in enumerate(output):
-                if line.find('MAIN') > 0:
-                    activityLine = output[index - 1]
-                    pos = activityLine.find(appInfo['appName'] + '/')
+        output = await self.device.shell('pm list packages -3')
+        app_list = []
+        for line in output.split('\n'):
+            vals = line.split(':')
+            if len(vals) > 1:
+                app_list.append({'appName': vals[1], 'activity': []})
+
+        for app_info in app_list:
+            self.logger.debug("Processing %s app", app_info['appName'])
+            output = await self.device.shell(f'pm dump {app_info["appName"]}')
+            for index, line in enumerate(output.split('\n')):
+                pos = line.find('codePath')
+                if pos > 0:
+                    app_info['codePath'] = line[pos + 9:] + '/base.apk'
+                elif line.find('MAIN:') > 0:
+                    activity_line = output[index + 1]
+                    pos = activity_line.find(app_info['appName'] + '/')
                     if pos > 0:
-                        appInfo['activity'].append(activityLine[
-                            activityLine.find('/', pos) + 1:activityLine.find(' ', pos)])
+                        app_info['activity'].append(activity_line[activity_line.find('/', pos) +
+                                                                  1:activity_line.find(' ', pos)])
+            output = await self.device.shell(f'{Android.AAPT_FULL_NAME} badging {app_info["codePath"]}')
+            for line in output.split('\n'):
+                if line.strip().find('application-label:') >= 0:
+                    app_info['label'] = line.split(':')[1][1:-1]
 
-        return appList
+        activities = []
+        inputs = []
+        for app_info in app_list:
+            label = app_info.get('label')
+            activity = app_info.get('activity')
+            if label is not None and len(activity) > 0:
+                activities.append({'value': label, 'param': app_info['appName']})
+                inputs.append({'value': label, 'param': app_info['appName'] + '/' + activity[0]})
+
+        driver_config = {
+            'values': {
+                'activities': activities
+            },
+            'commandGroups': {
+                'inputs': {
+                    'commands': {
+                        'start_app': {
+                            'values': inputs
+                        }
+                    }
+                }
+            }
+        }
+
+        self.controller.save_driver_data('android', driver_config)
+        self.controller.save_profile()

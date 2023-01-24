@@ -16,8 +16,8 @@ class OnkyoAVR(BaseDriver):
     RECEIVE_BUFFER_SIZE = 1024
     SEARCH_SUFFIX = 'QSTN'
 
-    def __init__(self, config, logger, use_numeric_key=False):
-        super(OnkyoAVR, self).__init__(config, logger, use_numeric_key)
+    def __init__(self, controller, config, logger, use_numeric_key=False):
+        super(OnkyoAVR, self).__init__(controller, config, logger, use_numeric_key)
 
         self.conn = None
         logger.info('Loaded %s driver', self.__class__.__name__)
@@ -55,8 +55,8 @@ class OnkyoAVR(BaseDriver):
 
     def convert_to_ISCP(self, strData):
         strData = OnkyoAVR.DESTINATION_UNIT_TYPE + strData + '\r'
-        data = OnkyoAVR.ISCP_HEADER.pack(OnkyoAVR.ISCP_SIGNATURE.encode(),
-            OnkyoAVR.ISCP_HEADER.size, len(strData), OnkyoAVR.ISCP_VERSION)
+        data = OnkyoAVR.ISCP_HEADER.pack(OnkyoAVR.ISCP_SIGNATURE.encode(), OnkyoAVR.ISCP_HEADER.size, len(strData),
+                                         OnkyoAVR.ISCP_VERSION)
         return data + strData.encode()
 
     def process_result(self, commandName, command, result):
@@ -67,17 +67,17 @@ class OnkyoAVR(BaseDriver):
         results = []
         while len(resultBuf) > 0:
             try:
-                (_, _, responseLen, _) = OnkyoAVR.ISCP_HEADER.unpack(
-                    resultBuf[:OnkyoAVR.ISCP_HEADER.size])
+                (_, _, responseLen, _) = OnkyoAVR.ISCP_HEADER.unpack(resultBuf[:OnkyoAVR.ISCP_HEADER.size])
                 # strip first 2 chars last 3 chars for \x1a\r\n
-                results.append(resultBuf[OnkyoAVR.ISCP_HEADER.size + len(OnkyoAVR.DESTINATION_UNIT_TYPE):OnkyoAVR.ISCP_HEADER.size + responseLen - 3].decode())
+                results.append(
+                    resultBuf[OnkyoAVR.ISCP_HEADER.size +
+                              len(OnkyoAVR.DESTINATION_UNIT_TYPE):OnkyoAVR.ISCP_HEADER.size + responseLen - 3].decode())
                 resultBuf = resultBuf[OnkyoAVR.ISCP_HEADER.size + responseLen:]
             except:
                 self.logger.error("Error processing buffer. "
-                    "Possibly incomplete buffer. Increase receive buffer size")
+                                  "Possibly incomplete buffer. Increase receive buffer size")
                 break
 
-        result['output'] = utils.get_last_output(command, results,
-            self.paramParser.value_sets, OnkyoAVR.SEARCH_SUFFIX)
+        result['output'] = utils.get_last_output(command, results, self.paramParser.value_sets, OnkyoAVR.SEARCH_SUFFIX)
 
         super(OnkyoAVR, self).process_result(commandName, command, result)

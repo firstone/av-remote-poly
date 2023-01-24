@@ -4,7 +4,8 @@ from drivers.param_parser import ParamParser
 
 class BaseDriver(object):
 
-    def __init__(self, config, logger, use_numeric_key=False):
+    def __init__(self, controller, config, logger, use_numeric_key=False):
+        self.controller = controller
         self.config = config
         self.use_numeric_key = use_numeric_key
         self.connected = False
@@ -16,16 +17,14 @@ class BaseDriver(object):
             self.config.update(data)
 
         self.paramParser = ParamParser(self.config, self.use_numeric_key)
-        self.connectionDescription = (self.config.get('hostName', '') + ':' +
-                                      str(self.config.get('port', 0)))
+        self.connectionDescription = (self.config.get('hostName', '') + ':' + str(self.config.get('port', 0)))
 
     def start(self):
         try:
             if not self.connected:
                 self.connect()
         except:
-            self.logger.exception('Connection to %s failed',
-                                  self.connectionDescription)
+            self.logger.exception('Connection to %s failed', self.connectionDescription)
 
     def connect(self):
         pass
@@ -52,19 +51,12 @@ class BaseDriver(object):
         if commandName == 'commands':
             commandList = []
             for commandName, command in self.config['commands'].items():
-                commandList.append({
-                    'name': commandName,
-                    'method': 'GET' if command.get('result', False) else 'PUT'
-                })
-            return {
-                'driver': self.__class__.__name__,
-                'commands': commandList
-            }
+                commandList.append({'name': commandName, 'method': 'GET' if command.get('result', False) else 'PUT'})
+            return {'driver': self.__class__.__name__, 'commands': commandList}
 
         command = self.config['commands'][commandName]
         if not command.get('result'):
-            raise Exception('Invalid command for ' + __name__ +
-                            ' and method: ' + commandName)
+            raise Exception('Invalid command for ' + __name__ + ' and method: ' + commandName)
 
         result = {
             'driver': self.__class__.__name__,
@@ -93,7 +85,7 @@ class BaseDriver(object):
             elif command.get('acceptsNumber'):
                 args = int(args)
             elif command.get('acceptsPct'):
-                args = float(args)/100
+                args = float(args) / 100
             elif command.get('acceptsFloat'):
                 args = '{0:g}'.format(float(args))
             elif command.get('acceptsHex'):
@@ -137,8 +129,7 @@ class BaseDriver(object):
             elif command.get('acceptsHex'):
                 output = int(result['output'], 16)
             else:
-                output = self.paramParser.translate_param(command, result['output'],
-                                                          None, False)
+                output = self.paramParser.translate_param(command, result['output'], None, False)
         except:
             pass
 

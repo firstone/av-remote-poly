@@ -1,10 +1,13 @@
 ### Configure devices
 
 For each device you have, click Add for appropriate device type and configure devices parameters.
-Usually only *host name* is needed. *description* is optional but will help in ISY Admin Console.
+Usually only *host name* is needed. *description* is optional but will help in IoX Admin Console.
 
 After changing parameters, run *Re-Discover* command in AVRemote controller or restart AVRemote.
 
+### Shield
+
+In order to see or set activies in *Inputs* node, send *Get Apps List* command and restart IoX Admin Console.
 
 ### Chromecast
 

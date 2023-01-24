@@ -12,8 +12,8 @@ class DenonAVR(BaseDriver):
     CLOSE_DELAY = .15
     SEARCH_SUFFIX = '?'
 
-    def __init__(self, config, logger, use_numeric_key=False):
-        super(DenonAVR, self).__init__(config, logger, use_numeric_key)
+    def __init__(self, controller, config, logger, use_numeric_key=False):
+        super(DenonAVR, self).__init__(controller, config, logger, use_numeric_key)
 
         self.conn = None
         logger.info('Loaded %s driver', self.__class__.__name__)
@@ -30,10 +30,8 @@ class DenonAVR(BaseDriver):
                 self.conn.close()
             except:
                 pass
-        self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM,
-            socket.IPPROTO_TCP)
-        self.logger.debug("Connecting to %s:%s", self.config['hostName'],
-            self.config['port'])
+        self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+        self.logger.debug("Connecting to %s:%s", self.config['hostName'], self.config['port'])
         self.conn.connect((self.config['hostName'], self.config['port']))
         self.conn.settimeout(self.config['timeout'])
         self.connected = True
@@ -62,8 +60,7 @@ class DenonAVR(BaseDriver):
             time.sleep(self.RESPONSE_DELAY)
             result = self.conn.recv(self.BUF_SIZE).decode()
             self.autoClose()
-            self.logger.debug("%s received %s", self.__class__.__name__,
-                result.replace('\r', '\\r'))
+            self.logger.debug("%s received %s", self.__class__.__name__, result.replace('\r', '\\r'))
         except socket.timeout:
             pass
         return result[:-1].split('\r') if result else [result]
@@ -73,8 +70,8 @@ class DenonAVR(BaseDriver):
             return
 
         if commandName.startswith('current_volume'):
-            output = utils.get_last_output(command, result['output'],
-                self.paramParser.value_sets, DenonAVR.SEARCH_SUFFIX)
+            output = utils.get_last_output(command, result['output'], self.paramParser.value_sets,
+                                           DenonAVR.SEARCH_SUFFIX)
 
             if output is None:
                 return
@@ -85,9 +82,9 @@ class DenonAVR(BaseDriver):
                 output = output + '.0'
             output = float(output)
         else:
-            output = self.paramParser.translate_param(command,
-                utils.get_last_output(command, result['output'],
-                    self.paramParser.value_sets, DenonAVR.SEARCH_SUFFIX))
+            output = self.paramParser.translate_param(
+                command,
+                utils.get_last_output(command, result['output'], self.paramParser.value_sets, DenonAVR.SEARCH_SUFFIX))
 
         if output:
             result['result'] = output

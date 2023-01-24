@@ -15,8 +15,8 @@ class Chromecast(BaseDriver):
 
     enabled = False
 
-    def __init__(self, config, logger, use_numeric_key=False):
-        super(Chromecast, self).__init__(config, logger, use_numeric_key)
+    def __init__(self, controller, config, logger, use_numeric_key=False):
+        super(Chromecast, self).__init__(controller, config, logger, use_numeric_key)
 
         self.cast = None
 
@@ -27,17 +27,13 @@ class Chromecast(BaseDriver):
             if args == '':
                 return ''
             elif not args:
-                return self.sendCommandRaw('quit_app',
-                                           self.config['commands']['quit_app'])
+                return self.sendCommandRaw('quit_app', self.config['commands']['quit_app'])
         elif commandName == 'toggle_mute':
-            currentMute = self.sendCommandRaw('current_mute',
-                                              self.config['commands']['current_mute'])
-            return self.sendCommandRaw('set_mute',
-                                       self.config['commands']['set_mute'], not currentMute)
+            currentMute = self.sendCommandRaw('current_mute', self.config['commands']['current_mute'])
+            return self.sendCommandRaw('set_mute', self.config['commands']['set_mute'], not currentMute)
 
         controllerName = command.get('controller')
-        controller = getattr(
-            self.cast, controllerName) if controllerName else self.cast
+        controller = getattr(self.cast, controllerName) if controllerName else self.cast
         attr = getattr(controller, command['code'])
 
         try:
@@ -66,8 +62,8 @@ class Chromecast(BaseDriver):
 
         if self.cast is None:
             device_name = self.config['name']
-            casts, browser = pychromecast.get_listed_chromecasts(
-                friendly_names=[device_name], tries=Chromecast.CAST_CONNECT_TRIES)
+            casts, browser = pychromecast.get_listed_chromecasts(friendly_names=[device_name],
+                                                                 tries=Chromecast.CAST_CONNECT_TRIES)
             stop_discovery(browser)
             if not casts:
                 self.logger.debug(f'Device not found: {device_name}')
@@ -87,7 +83,7 @@ class Chromecast(BaseDriver):
             pass
         self.cast = None
 
-    @ staticmethod
+    @staticmethod
     def processParams(config, param):
         config_changed = False
         config.setdefault('values', {})
@@ -96,10 +92,7 @@ class Chromecast(BaseDriver):
         if playlists is not None:
             values = []
             for playlist in playlists:
-                values.append({
-                    'value': playlist['name'],
-                    'param': [playlist['url'], playlist['type']]
-                })
+                values.append({'value': playlist['name'], 'param': [playlist['url'], playlist['type']]})
             if config['values'].get(Chromecast.PLAYLISTS_KEY_NAME) != values:
                 config['values'][Chromecast.PLAYLISTS_KEY_NAME] = values
                 config_changed = True
@@ -109,10 +102,7 @@ class Chromecast(BaseDriver):
             values = list(config.get('coreApps', []))
 
             for app in apps:
-                values.append({
-                    'value': app['name'],
-                    'param': app['app_id']
-                })
+                values.append({'value': app['name'], 'param': app['app_id']})
 
             defaultApp = config.get('defaultApp')
             if defaultApp:
@@ -128,23 +118,19 @@ class Chromecast(BaseDriver):
 
         return config_changed
 
-    @ staticmethod
+    @staticmethod
     def discoverDevices(logger):
         if not Chromecast.enabled:
             logger.debug(f'Chromecast disabled')
             return
 
-        casts, browser = pychromecast.get_chromecasts(
-            Chromecast.CAST_CONNECT_TRIES)
+        casts, browser = pychromecast.get_chromecasts(Chromecast.CAST_CONNECT_TRIES)
         stop_discovery(browser)
 
         result = {}
         for cast in casts:
             friendly_name = cast.cast_info.friendly_name
             logger.debug(f'Found Chromecast device {friendly_name}')
-            result[utils.desc_to_name(friendly_name)] = {
-                'name': friendly_name,
-                'driver': 'chromecast'
-            }
+            result[utils.desc_to_name(friendly_name)] = {'name': friendly_name, 'driver': 'chromecast'}
 
         return result

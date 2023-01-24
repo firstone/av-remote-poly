@@ -4,8 +4,8 @@ from udi_interface import LOGGER, Node
 
 class RemoteDevice(Node):
 
-    def __init__(self, controller, primaryDevice, primary, address, driverName, deviceName, config, deviceDriver):
-        super(RemoteDevice, self).__init__(controller, primary, address, deviceName)
+    def __init__(self, polyglot, primaryDevice, primary, address, driverName, deviceName, config, deviceDriver):
+        super(RemoteDevice, self).__init__(polyglot, primary, address, deviceName)
 
         self.id = driverName
 
@@ -63,9 +63,10 @@ class RemoteDevice(Node):
 
     def refresh_state(self):
         if self.primaryDevice.connected:
-            LOGGER.debug('Refreshing state for %s', self.name)
+            LOGGER.debug(f'Refreshing state for {self.name}')
             try:
                 for driverName, commandName in self.driverSetters.items():
+                    LOGGER.debug(f'Refreshing driver {driverName} command {commandName}')
                     output = self.deviceDriver.getData(commandName)
                     result = output.get('result')
                     if result is not None:

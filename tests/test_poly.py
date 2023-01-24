@@ -1,8 +1,6 @@
+import pytest
 import sys
-import unittest
-from unittest.mock import Mock
-from unittest.mock import MagicMock
-import yaml
+from unittest.mock import Mock, MagicMock
 
 import udi_interface
 
@@ -13,104 +11,80 @@ sys.stderr = sys.__stderr__
 udi_interface.LOGGER.handlers = []
 
 
-class PolyTester(unittest.TestCase):
+@pytest.fixture
+def device_factory(config_data):
 
-    @classmethod
-    def setUpClass(cls):
-        with open('tests/config.yaml', 'r') as configFile:
-            cls.config = yaml.safe_load(configFile)
+    def inner(key, cmd_key, suffix_key=None, return_value={}, has_command=True):
+        data = config_data[key]
+        if suffix_key is not None:
+            data = data['commandGroups'][suffix_key]
 
-    def test_simple(self):
         driver = Mock()
         primaryDevice = Mock()
-        poly = Mock()
-        driver.getCommand = MagicMock(return_value=PolyTester.config['simple']['commands']['command1'])
-        driver.getData = MagicMock(return_value={})
-        device = RemoteDevice(poly, primaryDevice, None, None, None, "test device", PolyTester.config['simple'], driver)
-        device.runCmd({'cmd': 'command1'})
-        driver.executeCommand.assert_called_with('command1', None)
+        poly = MagicMock()
+        driver.getCommand = MagicMock(return_value=data['commands'][cmd_key])
+        if not has_command:
+            driver.hasCommand = Mock(return_value=False)
+        driver.getData = MagicMock(return_value=return_value)
+        device = RemoteDevice(poly, primaryDevice, None, None, None, "test device", data, driver)
 
-    def test_read_only(self):
-        driver = Mock()
-        primaryDevice = Mock()
-        poly = Mock()
-        driver.getCommand = MagicMock(return_value=PolyTester.config['read_only']['commands']['command3'])
-        driver.getData = MagicMock(return_value={})
-        device = RemoteDevice(poly, primaryDevice, None, None, None, "test device", PolyTester.config['read_only'],
-                              driver)
-        device.runCmd({'cmd': 'command3'})
-        driver.executeCommand.assert_called_with('command3', None)
-        self.assertEqual(device.driverSetters['GV0'], 'command3')
+        return device, driver
 
-    def test_state(self):
-        driver = Mock()
-        driver.getData = Mock(return_value={'result': 1})
-        primaryDevice = Mock()
-        driver.getCommand = MagicMock(return_value=None)
-        primaryDevice.connected = True
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device", PolyTester.config['state'], driver)
-        device.runCmd({'cmd': 'command1'})
-        driver.executeCommand.assert_called_with('command1', None)
-        driver.getData.assert_called_with('command2')
-
-    def test_suffix(self):
-        driver = Mock()
-        driver.getData = Mock(return_value={'result': 1})
-        primaryDevice = Mock()
-        driver.getCommand = MagicMock(return_value=None)
-        primaryDevice.connected = True
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device",
-                              PolyTester.config['suffix']['commandGroups']['group1'], driver)
-        device.runCmd({'cmd': 'command1'})
-        driver.executeCommand.assert_called_with('command1_g1', None)
-        driver.getData.assert_called_with('command2_g1')
-
-    def test_read_only_suffix(self):
-        driver = Mock()
-        primaryDevice = Mock()
-        data = PolyTester.config['read_only_suffix']['commandGroups']['group1']
-        driver.getCommand = MagicMock(return_value=data['commands']['command1'])
-        driver.getData = MagicMock(return_value={})
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device", data, driver)
-        device.runCmd({'cmd': 'command1'})
-        driver.executeCommand.assert_called_with('command1_r1', None)
-        self.assertEqual(device.driverSetters['GV0'], 'command1_r1')
-
-    def test_prefix(self):
-        driver = Mock()
-        driver.getData = Mock(return_value={'result': 1})
-        primaryDevice = Mock()
-        driver.getCommand = MagicMock(return_value=None)
-        primaryDevice.connected = True
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device",
-                              PolyTester.config['prefix']['commandGroups']['group1'], driver)
-        device.runCmd({'cmd': 'command1'})
-        driver.executeCommand.assert_called_with('g1_command1', None)
-        driver.getData.assert_called_with('g1_command2')
-
-    def test_read_only_prefix(self):
-        driver = Mock()
-        primaryDevice = Mock()
-        data = PolyTester.config['read_only_prefix']['commandGroups']['group1']
-        driver.getCommand = MagicMock(return_value=data['commands']['command1'])
-        driver.getData = MagicMock(return_value={})
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device", data, driver)
-        device.runCmd({'cmd': 'command1'})
-        driver.executeCommand.assert_called_with('r1_command1', None)
-        self.assertEqual(device.driverSetters['GV0'], 'r1_command1')
-
-    def test_skips_bad_input_command(self):
-        driver = Mock()
-        driver.getData = Mock(return_value={'result': 1})
-        driver.hasCommand = Mock(return_value=False)
-        primaryDevice = Mock()
-        driver.getCommand = MagicMock(return_value=None)
-        primaryDevice.connected = True
-        device = RemoteDevice(None, primaryDevice, None, None, None, "test device", PolyTester.config['state'], driver)
-        device.runCmd({'cmd': 'command1'})
-        driver.executeCommand.assert_called_with('command1', None)
-        driver.getData.assert_not_called()
+    return inner
 
 
-if __name__ == '__main__':
-    unittest.main()
+def test_simple(device_factory):
+    device, driver = device_factory('simple', 'command1')
+
+    device.runCmd({'cmd': 'command1'})
+    driver.executeCommand.assert_called_with('command1', None)
+
+
+def test_read_only(device_factory):
+    device, driver = device_factory('read_only', 'command3')
+
+    device.runCmd({'cmd': 'command3'})
+    driver.executeCommand.assert_called_with('command3', None)
+    assert device.driverSetters['GV0'] == 'command3'
+
+
+def test_state(device_factory):
+    device, driver = device_factory('state', 'command1', return_value={'result': 1})
+    device.runCmd({'cmd': 'command1'})
+    driver.executeCommand.assert_called_with('command1', None)
+    driver.getData.assert_called_with('command2')
+
+
+def test_suffix(device_factory):
+    device, driver = device_factory('suffix', 'command1', 'group1', {'result': 1})
+    device.runCmd({'cmd': 'command1'})
+    driver.executeCommand.assert_called_with('command1_g1', None)
+    driver.getData.assert_called_with('command2_g1')
+
+
+def test_read_only_suffix(device_factory):
+    device, driver = device_factory('read_only_suffix', 'command1', 'group1')
+    device.runCmd({'cmd': 'command1'})
+    driver.executeCommand.assert_called_with('command1_r1', None)
+    assert device.driverSetters['GV0'] == 'command1_r1'
+
+
+def test_prefix(device_factory):
+    device, driver = device_factory('prefix', 'command1', 'group1', {'result': 1})
+    device.runCmd({'cmd': 'command1'})
+    driver.executeCommand.assert_called_with('g1_command1', None)
+    driver.getData.assert_called_with('g1_command2')
+
+
+def test_read_only_prefix(device_factory):
+    device, driver = device_factory('read_only_prefix', 'command1', 'group1')
+    device.runCmd({'cmd': 'command1'})
+    driver.executeCommand.assert_called_with('r1_command1', None)
+    assert device.driverSetters['GV0'] == 'r1_command1'
+
+
+def test_skips_bad_input_command(device_factory):
+    device, driver = device_factory('state', 'command1', return_value={'result': 1}, has_command=False)
+    device.runCmd({'cmd': 'command1'})
+    driver.executeCommand.assert_called_with('command1', None)
+    driver.getData.assert_not_called()

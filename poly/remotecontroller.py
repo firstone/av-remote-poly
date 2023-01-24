@@ -2,8 +2,8 @@ import copy
 import importlib
 from udi_interface import LOGGER
 import udi_interface
-import time
 import utils
+import yaml
 
 from polyprofile import ProfileFactory
 from poly.primaryremotedevice import PrimaryRemoteDevice
@@ -12,19 +12,19 @@ from poly.remotedevice import RemoteDevice
 
 class RemoteController(udi_interface.Node):
 
-    def __init__(self, polyglot, config, has_devices=False):
-        super(RemoteController,
-              self).__init__(polyglot, 'controller', 'controller',
-                             config['controller']['name'])
-        self.config_data = config
+    def __init__(self, polyglot, config_file, has_devices=False):
+        self.config_file = config_file
+        self.load_config()
+        super(RemoteController, self).__init__(polyglot, 'controller', 'controller',
+                                               self.config_data['controller']['name'])
         self.has_devices = has_devices
         self.device_drivers = {}
         self.device_driver_instances = {}
+        self.nodes = {}
 
         self.custom_data = udi_interface.Custom(polyglot, "customdata")
 
         polyglot.subscribe(polyglot.START, self.start, 'controller')
-        polyglot.subscribe(polyglot.STOP, self.stop)
         polyglot.subscribe(polyglot.CUSTOMTYPEDDATA, self.process_typed_params)
         polyglot.subscribe(polyglot.CUSTOMDATA, self.process_custom_data)
         polyglot.subscribe(polyglot.CONFIG, self.process_config)
@@ -36,57 +36,75 @@ class RemoteController(udi_interface.Node):
         polyglot.ready()
         polyglot.addNode(self, conn_status="ST")
 
+    def load_config(self):
+        with open(self.config_file, 'r') as f:
+            self.config_data = yaml.safe_load(f)
+
     def process_custom_data(self, data):
         self.custom_data.load(data)
+        driver_data = self.custom_data['drivers']
+        if driver_data is not None:
+            self.load_config()
+            utils.merge_objects(self.config_data['drivers'], driver_data)
 
     def process_config(self, config):
         self.config = config
 
     def process_config_done(self):
-        self.remove_stale_nodes()
-        self.create_devices()
-
-    def process_typed_params(self, config):
         needChanges = False
         devicesConfig = self.config_data.get('devices', {})
-        for driverName, paramList in config.items():
+        for driverName, paramList in self.type_config.items():
             if driverName in self.config_data['drivers']:
                 for index, params in enumerate(paramList):
                     params['driver'] = driverName
                     devicesConfig[driverName + '_' + str(100 - index)] = params
             else:
-                for deviceDriverName, driverData in self.config_data[
-                        'drivers'].items():
+                for deviceDriverName, driverData in self.config_data['drivers'].items():
                     if self.get_device_driver(deviceDriverName,
-                                              driverData).processParams(
-                                                  driverData,
-                                                  {driverName: paramList}):
+                                              driverData).processParams(driverData, {driverName: paramList}):
                         needChanges = True
-                        for deviceDriver in self.device_driver_instances[
-                                deviceDriverName].values():
+                        for deviceDriver in self.device_driver_instances[deviceDriverName].values():
                             deviceDriver.configure(driverData)
 
         if needChanges:
-            LOGGER.debug('Regenerating profile')
-            factory = ProfileFactory('.', self.config_data)
-            factory.create()
-            if factory.write():
-                LOGGER.debug('Profile has changed. Updating')
-                self.poly.installprofile()
-            else:
-                LOGGER.debug('Profile not changed. Skipping')
+            self.save_profile()
 
         self.config_data['devices'] = devicesConfig
+
+        self.create_devices()
+        self.remove_stale_nodes()
+
+    def process_typed_params(self, config):
+        if config is None:
+            return
+
+        self.type_config = config
+
+    def save_driver_data(self, driver_name, data):
+        driver_data = self.custom_data.get('drivers')
+        if driver_data is None:
+            driver_data = {}
+        driver_data[driver_name] = data
+        self.custom_data['drivers'] = driver_data
+        self.config_data['drivers'].update(driver_data)
+
+    def save_profile(self):
+        LOGGER.debug('Regenerating profile')
+        factory = ProfileFactory('.', self.config_data)
+        factory.create()
+        if factory.write():
+            LOGGER.debug('Profile has changed. Updating')
+            self.poly.installprofile()
+        else:
+            LOGGER.debug('Profile not changed. Skipping')
 
     def remove_stale_nodes(self):
         if len(self.config['nodes']) == 0:
             return
 
-        addressMap = copy.deepcopy(self.custom_data.get('addressMap', {}))
-        discoveredDevices = copy.deepcopy(
-            self.custom_data.get('discoveredDevices', {}))
-        removedDevices = copy.deepcopy(
-            self.custom_data.get('removedDevices', {}))
+        addressMap = copy.deepcopy(self.get_custom_data('addressMap', {}))
+        discoveredDevices = copy.deepcopy(self.get_custom_data('discoveredDevices', {}))
+        removedDevices = copy.deepcopy(self.get_custom_data('removedDevices', {}))
 
         # enumerate existing nodes
         existingNodes = {}
@@ -112,12 +130,14 @@ class RemoteController(udi_interface.Node):
                 removedDevices[item['address']] = 1
                 del self.nodes[item['address']]
 
-        if (self.custom_data.get('discoveredDevices') != discoveredDevices
-                or self.custom_data.get('removedDevices') != removedDevices
-                or self.custom_data.get('addressMap') != addressMap):
-            self.custom_data['addressMap'] = addressMap
+        if self.custom_data.get('discoveredDevices') != discoveredDevices:
             self.custom_data['discoveredDevices'] = discoveredDevices
+
+        if self.custom_data.get('removedDevices') != removedDevices:
             self.custom_data['removedDevices'] = removedDevices
+
+        if self.custom_data.get('addressMap') != addressMap:
+            self.custom_data['addressMap'] = addressMap
 
     def init_typed_params(self):
         params = []
@@ -141,6 +161,7 @@ class RemoteController(udi_interface.Node):
         self.setDriver('ST', 1)
 
     def poll(self, poll_flag):
+        LOGGER.debug(f'poll event {poll_flag}')
         if 'longPoll' in poll_flag:
             for node in self.nodes.values():
                 node.refresh_state()
@@ -149,12 +170,9 @@ class RemoteController(udi_interface.Node):
         pass
 
     def is_device_configured(self, device):
-        for param in self.config_data['drivers'][device['driver']].get(
-                'parameters', []):
-            if param.get('isRequired',
-                         False) and (device[param['name']] == 0
-                                     or device[param['name']] == '0'
-                                     or device[param['name']] == ''):
+        for param in self.config_data['drivers'][device['driver']].get('parameters', []):
+            if param.get('isRequired', False) and (device[param['name']] == 0 or device[param['name']] == '0' or
+                                                   device[param['name']] == ''):
                 return False
         return True
 
@@ -169,28 +187,33 @@ class RemoteController(udi_interface.Node):
 
         return item['address']
 
+    def get_custom_data(self, key, default=None):
+        value = self.custom_data[key]
+        if value is None:
+            value = default
+
+        return value
+
     def discover(self, *args, **kwargs):
         LOGGER.debug('Starting device discovery')
-        addressMap = self.custom_data.get('addressMap', {})
-        discoveredDevices = copy.deepcopy(
-            self.custom_data.get('discoveredDevices', {}))
+        discoveredDevices = copy.deepcopy(self.get_custom_data('discoveredDevices', {}))
 
         for driverName, driverData in self.config_data['drivers'].items():
             LOGGER.debug(f'Running discovery for {driverName}')
-            devices = self.get_device_driver(
-                driverName, driverData).discoverDevices(LOGGER)
+            devices = self.get_device_driver(driverName, driverData).discoverDevices(LOGGER)
             if devices is not None:
                 discoveredDevices.update(devices)
 
         LOGGER.debug('Finished device discovery')
-        self.custom_data['addressMap'] = addressMap
         self.custom_data['discoveredDevices'] = discoveredDevices
         self.custom_data['removedDevices'] = {}
 
+        self.create_devices()
+
     def create_devices(self):
-        addressMap = copy.deepcopy(self.custom_data.get('addressMap', {}))
-        discoveredDevices = self.custom_data.get('discoveredDevices', {})
-        removedDevices = self.custom_data.get('removedDevices', {})
+        addressMap = copy.deepcopy(self.get_custom_data('addressMap', {}))
+        discoveredDevices = self.get_custom_data('discoveredDevices', {})
+        removedDevices = self.get_custom_data('removedDevices', {})
 
         devicesConfig = self.config_data.get('devices', {})
         if discoveredDevices is not None:
@@ -198,60 +221,49 @@ class RemoteController(udi_interface.Node):
 
         self.config_data['devices'] = devicesConfig
         for deviceName, deviceData in devicesConfig.items():
-            if self.is_device_configured(deviceData) and deviceData.get(
-                    'enable', True):
+            LOGGER.debug(f'processing {deviceName} {deviceData}')
+            if self.is_device_configured(deviceData) and deviceData.get('enable', True):
                 driverName = deviceData['driver']
                 deviceData.update(self.config_data['drivers'][driverName])
-                polyData = self.config_data['poly']['drivers'].get(
-                    driverName, {})
+                polyData = self.config_data['poly']['drivers'].get(driverName, {})
                 deviceData['poly'].update(polyData)
 
-                deviceDriver = self.device_driver_instances.get(
-                    driverName, {}).get(deviceName)
+                deviceDriver = self.device_driver_instances.get(driverName, {}).get(deviceName)
                 if deviceDriver is None:
-                    deviceDriver = self.get_device_driver(
-                        driverName,
-                        deviceData)(utils.merge_commands(deviceData), LOGGER,
-                                    True)
-                    self.device_driver_instances[driverName][
-                        deviceName] = deviceDriver
+                    deviceDriver = self.get_device_driver(driverName,
+                                                          deviceData)(self, utils.merge_commands(deviceData), LOGGER,
+                                                                      True)
+                    self.device_driver_instances[driverName][deviceName] = deviceDriver
 
                 nodeAddress = self.get_device_address(deviceName, addressMap)
                 if nodeAddress not in removedDevices:
-                    nodeName = deviceData.get('name',
-                                              utils.name_to_desc(deviceName))
-                    primaryDevice = PrimaryRemoteDevice(
-                        self, nodeAddress, driverName, nodeName, deviceData,
-                        deviceDriver)
-                    self.addNode(primaryDevice)
-                for commandGroup, commandGroupData in deviceData.get(
-                        'commandGroups', {}).items():
-                    commandGroupData['poly'] = polyData
-                    groupConfig = self.config_data['poly'][
-                        'commandGroups'].get(commandGroup)
-                    if groupConfig:
-                        groupDriverName = driverName + '_' + commandGroup
-                        groupNodeAddress = self.get_device_address(
-                            deviceName + '_' + commandGroup, addressMap)
-                        if groupNodeAddress not in removedDevices:
-                            self.addNode(
-                                RemoteDevice(self, primaryDevice, nodeAddress,
-                                             groupNodeAddress, groupDriverName,
-                                             utils.name_to_desc(commandGroup),
-                                             commandGroupData, deviceDriver))
+                    nodeName = deviceData.get('name', utils.name_to_desc(deviceName))
+                    primaryDevice = PrimaryRemoteDevice(self.poly, nodeAddress, driverName, nodeName, deviceData,
+                                                        deviceDriver)
+                    self.poly.addNode(primaryDevice)
+                    self.nodes[primaryDevice.address] = primaryDevice
+                    for commandGroup, commandGroupData in deviceData.get('commandGroups', {}).items():
+                        commandGroupData['poly'] = polyData
+                        groupConfig = self.config_data['poly']['commandGroups'].get(commandGroup)
+                        if groupConfig:
+                            groupDriverName = driverName + '_' + commandGroup
+                            groupNodeAddress = self.get_device_address(deviceName + '_' + commandGroup, addressMap)
+                            if groupNodeAddress not in removedDevices:
+                                device = RemoteDevice(self.poly, primaryDevice,
+                                                      nodeAddress, groupNodeAddress, groupDriverName,
+                                                      utils.name_to_desc(commandGroup), commandGroupData, deviceDriver)
+                                self.poly.addNode(device)
+                                self.nodes[device.address] = device
+                    primaryDevice.start()
 
         if self.custom_data.get('addressMap') != addressMap:
             self.custom_data['addressMap'] = addressMap
-            self.custom_data['discoveredDevices'] = discoveredDevices
-            self.custom_data['removedDevices'] = removedDevices
 
     def get_device_driver(self, driverName, deviceData):
         deviceDriver = self.device_drivers.get(driverName)
         if deviceDriver is None:
             driverModule = importlib.import_module('drivers.' + driverName)
-            deviceDriver = getattr(
-                driverModule,
-                deviceData.get('moduleName', driverName.capitalize()))
+            deviceDriver = getattr(driverModule, deviceData.get('moduleName', driverName.capitalize()))
             self.device_drivers[driverName] = deviceDriver
             self.device_driver_instances[driverName] = {}
 

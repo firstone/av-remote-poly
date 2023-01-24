@@ -54,8 +54,7 @@ def get_last_output(command, output, value_sets, searchSuffix):
     for line in output:
         if line.startswith(prefix):
             value = line[len(prefix):]
-            if (command.get('acceptsNumber', False) or
-                command.get('acceptsFloat', False)):
+            if (command.get('acceptsNumber', False) or command.get('acceptsFloat', False)):
                 try:
                     float(value)
                     return value
@@ -71,3 +70,14 @@ def get_last_output(command, output, value_sets, searchSuffix):
                 return value
 
     return None
+
+
+def merge_objects(obj_to, obj_from):
+    for key, val in obj_from.items():
+        if key in obj_to:
+            if isinstance(val, list):
+                obj_to[key].extend(val)
+            else:
+                merge_objects(obj_to[key], val)
+        else:
+            obj_to[key] = val

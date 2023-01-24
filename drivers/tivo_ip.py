@@ -8,8 +8,8 @@ class TivoIP(BaseDriver):
 
     RECEIVE_BUFFER_SIZE = 1024
 
-    def __init__(self, config, logger, use_numeric_key=False):
-        super(TivoIP, self).__init__(config, logger, use_numeric_key)
+    def __init__(self, controller, config, logger, use_numeric_key=False):
+        super(TivoIP, self).__init__(controller, config, logger, use_numeric_key)
 
         logger.info('Loaded %s driver', self.__class__.__name__)
         self.conn = None
@@ -18,7 +18,7 @@ class TivoIP(BaseDriver):
         self.do_connect()
         self.connected = True
         self.close()
-        
+
     def do_connect(self):
         if self.conn is not None:
             return
