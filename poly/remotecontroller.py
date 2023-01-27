@@ -28,6 +28,7 @@ class RemoteController(udi_interface.Node):
         self.custom_data = udi_interface.Custom(polyglot, "customdata")
 
         polyglot.subscribe(polyglot.START, self.start, 'controller')
+        polyglot.subscribe(polyglot.STOP, self.stop)
         polyglot.subscribe(polyglot.CUSTOMTYPEDDATA, self.process_typed_params)
         polyglot.subscribe(polyglot.CUSTOMDATA, self.process_custom_data)
         polyglot.subscribe(polyglot.CONFIG, self.process_config)
@@ -37,7 +38,7 @@ class RemoteController(udi_interface.Node):
         self.init_typed_params()
 
         polyglot.ready()
-        polyglot.addNode(self)
+        polyglot.addNode(self, conn_status='ST')
 
     def load_config(self):
         with open(self.config_file, 'r') as f:
@@ -167,6 +168,11 @@ class RemoteController(udi_interface.Node):
     def start(self):
         self.setDriver('ST', 1)
 
+    def stop(self):
+        self.setDriver('ST', 0)
+        for node in self.nodes.values():
+            node.stop()
+
     def poll(self, poll_flag):
         self.refresh_state()
 
@@ -276,4 +282,4 @@ class RemoteController(udi_interface.Node):
 
     id = 'controller'
     commands = {'DISCOVER': discover}
-    drivers = [{'driver': 'ST', 'value': 0, 'uom': 2}]
+    drivers = [{'driver': 'ST', 'value': 0, 'uom': 25}]

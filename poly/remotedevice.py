@@ -49,6 +49,9 @@ class RemoteDevice(Node):
     def start(self):
         self.refresh_state()
 
+    def stop(self):
+        pass
+
     def execute_command_by_index(self, command):
         self.execute_command({'cmd': self.command_list[int(command['value'])]})
 

@@ -66,13 +66,16 @@ class ProfileFactory(object):
         self.nlsData.append(self.NODE_ICON.format('controller', self.config['controller'].get('icon', 'GenericCtl')))
         self.nlsData.append('')
         self.nlsData.append(self.COMMAND_NAME.format('ctl-DISCOVER', 'Re-Discover'))
-        self.nlsData.append(self.STATUS_NAME.format('ctl', 'ST', self.config['controller']['name'] + ' Online'))
+        self.nlsData.append(self.STATUS_NAME.format('ctl', 'ST', self.config['controller']['name'] + ' Status'))
         self.nlsData.append('')
+        self.nlsData.append('CTRLSTATUS-0 = Offline')
+        self.nlsData.append('CTRLSTATUS-1 = Online')
+        self.nlsData.append('CTRLSTATUS-2 = Failed')
 
         # Write controller node
         nodeDef = ET.SubElement(self.nodeTree, 'nodeDef', id='controller', nls='ctl')
         sts = ET.SubElement(nodeDef, 'sts')
-        ET.SubElement(sts, 'st', id='ST', editor='bool')
+        ET.SubElement(sts, 'st', id='ST', editor='CTRLSTATUS')
         cmds = ET.SubElement(nodeDef, 'cmds')
         ET.SubElement(cmds, 'sends')
         accepts = ET.SubElement(cmds, 'accepts')
@@ -80,6 +83,9 @@ class ProfileFactory(object):
 
         editor = ET.SubElement(self.editorTree, 'editor', id='bool')
         ET.SubElement(editor, 'range', uom='2', subset='0,1')
+
+        editor = ET.SubElement(self.editorTree, 'editor', id='CTRLSTATUS')
+        ET.SubElement(editor, 'range', uom='25', subset='0,1,2')
 
         # Write primary devices
         for driverName, driverData in self.config['drivers'].items():

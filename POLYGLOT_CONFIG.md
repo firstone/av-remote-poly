@@ -7,7 +7,7 @@ After changing parameters, run *Re-Discover* command in AVRemote controller or r
 
 ### Shield
 
-In order to see or set activies in *Inputs* node, send *Get Apps List* command and restart IoX Admin Console.
+In order to see or set activies in *Inputs* node, send *Get Apps List* command, restart *AVRemote* node server and restart IoX Admin Console.
 
 ### Chromecast
 

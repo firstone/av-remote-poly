@@ -14,6 +14,9 @@ class PrimaryRemoteDevice(RemoteDevice):
         self.deviceDriver.start()
         self.refresh_state()
 
+    def stop(self):
+        self.setDriver('ST', 0)
+
     def refresh_state(self):
         self.connected = self.deviceDriver.is_connected()
         self.setDriver('ST', 1 if self.connected else 0)
