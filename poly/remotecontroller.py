@@ -37,7 +37,7 @@ class RemoteController(udi_interface.Node):
         self.init_typed_params()
 
         polyglot.ready()
-        polyglot.addNode(self, conn_status="ST")
+        polyglot.addNode(self)
 
     def load_config(self):
         with open(self.config_file, 'r') as f:
