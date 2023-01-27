@@ -71,7 +71,11 @@ class Android(BaseDriver):
         return result
 
     async def start_app(self, args):
-        return await self.device.shell(f'am start -n {args}')
+        # self.logger.debug(f'Starting app {args}')
+        result = await self.device.shell(f'am start -n {args}')
+        # self.logger.debug(result)
+
+        return result
 
     async def check_file(self, file_name):
         output = await self.device.shell(f'ls -la {file_name}')

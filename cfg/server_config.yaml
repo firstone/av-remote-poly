@@ -97,7 +97,7 @@ drivers:
           start_app:
             values:
               - value: Dashboard
-                param: com.google.android.leanbacklauncher/.MainActivity
+                param: com.google.android.tvlauncher/.MainActivity
               - value: Screen Saver
                 param: com.google.android.backdrop/.MainActivity
               - value: Wallpaper

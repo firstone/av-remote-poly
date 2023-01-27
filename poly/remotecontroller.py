@@ -23,6 +23,7 @@ class RemoteController(udi_interface.Node):
         self.nodes = {}
         self.config = {}
         self.type_config = {}
+        self.config_done = False
 
         self.custom_data = udi_interface.Custom(polyglot, "customdata")
 
@@ -53,6 +54,7 @@ class RemoteController(udi_interface.Node):
         self.config = config
 
     def process_config_done(self):
+        self.config_done = True
         needChanges = False
         devicesConfig = self.config_data.get('devices', {})
         for driverName, paramList in self.type_config.items():
@@ -75,12 +77,15 @@ class RemoteController(udi_interface.Node):
 
         self.create_devices()
         self.remove_stale_nodes()
+        self.refresh_state()
 
     def process_typed_params(self, config):
         if config is None:
             return
 
         self.type_config = config
+        if self.config_done:
+            self.process_config_done()
 
     def save_driver_data(self, driver_name, data):
         driver_data = self.custom_data.get('drivers')
@@ -163,13 +168,11 @@ class RemoteController(udi_interface.Node):
         self.setDriver('ST', 1)
 
     def poll(self, poll_flag):
-        LOGGER.debug(f'poll event {poll_flag}')
-        if 'longPoll' in poll_flag:
-            for node in self.nodes.values():
-                node.refresh_state()
+        self.refresh_state()
 
     def refresh_state(self):
-        pass
+        for node in self.nodes.values():
+            node.refresh_state()
 
     def is_device_configured(self, device):
         for param in self.config_data['drivers'][device['driver']].get('parameters', []):
