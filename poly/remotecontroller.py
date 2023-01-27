@@ -21,6 +21,8 @@ class RemoteController(udi_interface.Node):
         self.device_drivers = {}
         self.device_driver_instances = {}
         self.nodes = {}
+        self.config = {}
+        self.type_config = {}
 
         self.custom_data = udi_interface.Custom(polyglot, "customdata")
 
@@ -86,7 +88,7 @@ class RemoteController(udi_interface.Node):
             driver_data = {}
         driver_data[driver_name] = data
         self.custom_data['drivers'] = driver_data
-        self.config_data['drivers'].update(driver_data)
+        utils.merge_objects(self.config_data['drivers'], driver_data)
 
     def save_profile(self):
         LOGGER.debug('Regenerating profile')

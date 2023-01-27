@@ -52,16 +52,21 @@ class Android(BaseDriver):
 
         self.loop.run_until_complete(do_connect())
 
+    async def send_key(self, commandName, args):
+        code = args if args else self.config['commands'][commandName]['code']
+        result = await self.device.shell(f'input keyevent {code}')
+
+        return result
+
     def sendCommandRaw(self, commandName, command, args=None):
         if not self.connected:
             self.connect()
 
-        f = getattr(self, commandName)
+        f = getattr(self, commandName, None)
         if f is not None:
             result = self.loop.run_until_complete(f(args))
         else:
-            code = args if args else self.config['commands'][commandName]['code']
-            result = self.device.shell(f'input keyevent {code}')
+            result = self.loop.run_until_complete(self.send_key(commandName, args))
 
         return result
 
@@ -113,17 +118,18 @@ class Android(BaseDriver):
         for app_info in app_list:
             self.logger.debug("Processing %s app", app_info['appName'])
             output = await self.device.shell(f'pm dump {app_info["appName"]}')
-            for index, line in enumerate(output.split('\n')):
+            lines = output.split('\n')
+            for index, line in enumerate(lines):
                 pos = line.find('codePath')
                 if pos > 0:
                     app_info['codePath'] = line[pos + 9:] + '/base.apk'
                 elif line.find('MAIN:') > 0:
-                    activity_line = output[index + 1]
+                    activity_line = lines[index + 1]
                     pos = activity_line.find(app_info['appName'] + '/')
                     if pos > 0:
                         app_info['activity'].append(activity_line[activity_line.find('/', pos) +
                                                                   1:activity_line.find(' ', pos)])
-            output = await self.device.shell(f'{Android.AAPT_FULL_NAME} badging {app_info["codePath"]}')
+            output = await self.device.shell(f'{Android.AAPT_FULL_NAME} d badging {app_info["codePath"]}')
             for line in output.split('\n'):
                 if line.strip().find('application-label:') >= 0:
                     app_info['label'] = line.split(':')[1][1:-1]
