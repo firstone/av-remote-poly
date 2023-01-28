@@ -85,7 +85,7 @@ class ProfileFactory(object):
         ET.SubElement(editor, 'range', uom='2', subset='0,1')
 
         editor = ET.SubElement(self.editorTree, 'editor', id='CTRLSTATUS')
-        ET.SubElement(editor, 'range', uom='25', subset='0,1,2')
+        ET.SubElement(editor, 'range', uom='25', subset='0,1,2', nls='CTRLSTATUS')
 
         # Write primary devices
         for driverName, driverData in self.config['drivers'].items():
