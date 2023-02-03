@@ -30,6 +30,23 @@ drivers:
           param: com.google.android.backdrop
         - value: Wallpaper
           param: com.android.systemui.ImageWallpaper
+      media_state:
+        - value: Unknown
+          param: 0
+        - value: Stopped
+          param: 1
+        - value: Paused
+          param: 2
+        - value: Playing
+          param: 3
+        - value: Forwarding
+          param: 4
+        - value: Rewinding
+          param: 5
+        - value: Skip Previous
+          param: 9
+        - value: Skip Next
+          param: 10
     commandGroups:
       navigation:
         commands:
@@ -69,6 +86,10 @@ drivers:
             code: 85
           stop:
             code: 86
+          get_media_state:
+            value_set: media_state_reverse
+            result: true
+            readOnly: true
       media:
         commands:
           fast_forward:
@@ -1176,6 +1197,10 @@ poly:
             name: GV0
             description: Current Activity
             input: get_current_activity
+        get_media_state:
+          driver:
+            name: GV1
+            description: Media State
     chromecast:
       commands:
         current_status:

@@ -11,6 +11,7 @@ class Android(BaseDriver):
 
     WINDOW_RECORD = 'Window '
     ON_SCREEN_RECORD = 'isOnScreen=true'
+    MEDIA_STATE_RECORD = 'state=PlaybackState'
     KEY_FILE_NAME = '.androidKey'
     TRANSPORT_TIMEOUT = 30
     AUTH_TIMEOUT = 60
@@ -84,6 +85,16 @@ class Android(BaseDriver):
     async def upload_file(self, file_name, remote_file):
         await self.device.push(file_name, remote_file)
         await self.device.shell(f'chmod 0755 {remote_file}')
+
+    async def get_media_state(self, _):
+        output = await self.device.shell(f'dumpsys media_session')
+        for line in output.split('\n'):
+            pos = line.find(Android.MEDIA_STATE_RECORD)
+            if pos > 0:
+                state = line[len(Android.MEDIA_STATE_RECORD):].split(',')[0]
+                return int(state.split('=')[1])
+
+        return 0
 
     async def get_current_activity(self, _):
         output = await self.device.shell(f'dumpsys window windows')
