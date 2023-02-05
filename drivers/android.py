@@ -51,6 +51,9 @@ class Android(BaseDriver):
             if self.device.available:
                 self.connected = True
 
+        if self.loop.is_running():
+            self.loop.stop()
+
         self.loop.run_until_complete(do_connect())
 
     async def send_key(self, commandName, args):
@@ -63,6 +66,8 @@ class Android(BaseDriver):
         if not self.connected:
             self.connect()
 
+        if self.loop.is_running():
+            self.loop.stop()
         f = getattr(self, commandName, None)
         if f is not None:
             result = self.loop.run_until_complete(f(args))

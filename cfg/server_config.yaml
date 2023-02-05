@@ -1201,12 +1201,14 @@ poly:
           driver:
             name: GV1
             description: Media State
+            sends: true
     chromecast:
       commands:
         current_status:
           driver:
             name: GV0
             description: Status
+            sends: true
         set_volume:
           param:
             uom: 51

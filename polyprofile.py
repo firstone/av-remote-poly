@@ -41,7 +41,7 @@ class ProfileFactory(object):
 
     NODE_NAME = 'ND-{}-NAME = {}'
     NODE_ICON = 'ND-{}-ICON = {}'
-    COMMAND_NAME = 'CMD-{}-NAME = {}'
+    COMMAND_NAME = 'CMD-{}-{}-NAME = {}'
     STATUS_NAME = 'ST-{}-{}-NAME = {}'
     PROFILE_DIR = 'profile'
     EDITOR_FILE = ['editor', 'editors.xml']
@@ -65,7 +65,7 @@ class ProfileFactory(object):
         self.nlsData.append(self.NODE_NAME.format('controller', self.config['controller']['name'] + ' Controller'))
         self.nlsData.append(self.NODE_ICON.format('controller', self.config['controller'].get('icon', 'GenericCtl')))
         self.nlsData.append('')
-        self.nlsData.append(self.COMMAND_NAME.format('ctl-DISCOVER', 'Re-Discover'))
+        self.nlsData.append(self.COMMAND_NAME.format('ctl', 'DISCOVER', 'Re-Discover'))
         self.nlsData.append(self.STATUS_NAME.format('ctl', 'ST', self.config['controller']['name'] + ' Status'))
         self.nlsData.append('')
         self.nlsData.append('CTRLSTATUS-0 = Offline')
@@ -155,17 +155,18 @@ class ProfileFactory(object):
         nodeDef = ET.SubElement(self.nodeTree, 'nodeDef', id=nodeName, nls=nlsName)
         states = ET.SubElement(nodeDef, 'sts')
         cmds = ET.SubElement(nodeDef, 'cmds')
-        ET.SubElement(cmds, 'sends')
+        sends = ET.SubElement(cmds, 'sends')
         accepts = ET.SubElement(cmds, 'accepts')
         cmd_list = []
         for commandName, commandData in nodeData['commands'].items():
             commandKey = nodeName + '_' + commandName
             nlsCommand = utils.name_to_nls(commandKey)
             polyData = polyCommandsData.get(commandName, {})
-            polyDriverName = polyData.get('driver', {}).get('name')
+            polyDriver = polyData.get('driver', {})
+            polyDriverName = polyDriver.get('name')
             if not commandData.get('result'):
                 self.nlsData.append(
-                    self.COMMAND_NAME.format(nlsName + '-' + commandName,
+                    self.COMMAND_NAME.format(nlsName, commandName,
                                              commandData.get('description', utils.name_to_desc(commandName))))
                 cmd = ET.SubElement(accepts, 'cmd', id=commandName)
                 param = None
@@ -193,18 +194,26 @@ class ProfileFactory(object):
                     nlsCommand, paramParser.value_sets[commandData['value_set'].replace('_reverse', '') + '_names'])
 
             if polyDriverName:
-                ET.SubElement(states, 'st', id=polyDriverName, editor=nlsCommand)
 
-                self.nlsData.append(
-                    self.STATUS_NAME.format(nlsName, polyDriverName,
-                                            polyData['driver'].get('description', utils.name_to_desc(commandName))))
+                def add_element(parent, elem_name, fmt_string, set_editor=True):
+                    attr = {'id': polyDriverName}
+                    if set_editor:
+                        attr['editor'] = nlsCommand
+                    ET.SubElement(parent, elem_name, attr)
+                    self.nlsData.append(
+                        fmt_string.format(nlsName, polyDriverName,
+                                          polyData['driver'].get('description', utils.name_to_desc(commandName))))
+
+                add_element(states, 'st', self.STATUS_NAME)
+                if polyDriver.get('sends'):
+                    add_element(sends, 'cmd', self.COMMAND_NAME, False)
 
         if len(cmd_list) > self.COMMAND_LIST_THRESHOLD:
             nlsCommand = nlsName + '_C'
             for cmd_index, commandName in enumerate(cmd_list):
                 self.nlsData.append(nlsCommand + '-' + str(cmd_index) + ' = ' +
                                     commandData.get('description', utils.name_to_desc(commandName)))
-            self.nlsData.append(self.COMMAND_NAME.format(nlsName + '-execute', 'Send Command'))
+            self.nlsData.append(self.COMMAND_NAME.format(nlsName, 'execute', 'Send Command'))
             cmd = ET.SubElement(accepts, 'cmd', id='execute')
             param = ET.SubElement(cmd, 'p', id='', editor=nlsCommand)
             editor = ET.SubElement(self.editorTree, 'editor', id=nlsCommand)

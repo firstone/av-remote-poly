@@ -167,6 +167,7 @@ class RemoteController(udi_interface.Node):
 
     def start(self):
         self.setDriver('ST', 1)
+        self.poly.setCustomParamsDoc()
 
     def stop(self):
         self.setDriver('ST', 0)
