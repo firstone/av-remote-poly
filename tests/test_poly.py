@@ -45,7 +45,7 @@ def test_read_only(device_factory):
 
     device.runCmd({'cmd': 'command3'})
     driver.executeCommand.assert_called_with('command3', None)
-    assert device.driverSetters['GV0'] == 'command3'
+    assert device.driver_setters['GV0'].command_name == 'command3'
 
 
 def test_state(device_factory):
@@ -66,7 +66,7 @@ def test_read_only_suffix(device_factory):
     device, driver = device_factory('read_only_suffix', 'command1', 'group1')
     device.runCmd({'cmd': 'command1'})
     driver.executeCommand.assert_called_with('command1_r1', None)
-    assert device.driverSetters['GV0'] == 'command1_r1'
+    assert device.driver_setters['GV0'].command_name == 'command1_r1'
 
 
 def test_prefix(device_factory):
@@ -80,7 +80,7 @@ def test_read_only_prefix(device_factory):
     device, driver = device_factory('read_only_prefix', 'command1', 'group1')
     device.runCmd({'cmd': 'command1'})
     driver.executeCommand.assert_called_with('r1_command1', None)
-    assert device.driverSetters['GV0'] == 'r1_command1'
+    assert device.driver_setters['GV0'].command_name == 'r1_command1'
 
 
 def test_skips_bad_input_command(device_factory):
