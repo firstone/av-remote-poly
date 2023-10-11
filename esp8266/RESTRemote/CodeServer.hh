@@ -19,7 +19,7 @@ public:
 
     CodeServer(CodeRegistry &arg, IRInterface &irInt)
             : ESP8266WebServer(PORT), registry(arg), irInterface(irInt),
-                outputBuffer(OUTPUT_BUF_SIZE), jsonBuffer(DEFAULT_JSON_BUF_SIZE) {
+                outputBuffer(OUTPUT_BUF_SIZE), doc(DEFAULT_JSON_BUF_SIZE) {
         on("/", HTTP_GET, std::bind(&CodeServer::mainPage, this));
         on("/ping", HTTP_GET, std::bind(&CodeServer::emptyResponse, this));
         on("/list", HTTP_GET, std::bind(&CodeServer::list, this));
@@ -94,10 +94,10 @@ public:
         const size_t bufferSize = JSON_ARRAY_SIZE(codeList.size())
             + JSON_OBJECT_SIZE(3);
 
-        DynamicJsonBuffer jsonBuffer(bufferSize);
+        DynamicJsonDocument doc(bufferSize);
 
-        auto &root = jsonBuffer.createObject();
-        auto &list = root.createNestedArray("codes");
+        auto root = doc.to<JsonObject>();
+        auto list = root.createNestedArray("codes");
         for (auto &it : codeList) {
             list.add(it.substring(sizeof(CodeRegistry::CODES_DIR)));
         }
@@ -150,10 +150,10 @@ public:
     }
 
     void sendResult(bool isSuccess, const String &msg) {
-        sendResult(isSuccess, msg, jsonBuffer.createObject());
+        sendResult(isSuccess, msg, doc.to<JsonObject>());
     }
 
-    void sendResult(bool isSuccess, const String &msg, JsonObject &root) {
+    void sendResult(bool isSuccess, const String &msg, JsonObject root) {
         int retCode;
         if (isSuccess) {
             retCode = 200;
@@ -167,11 +167,11 @@ public:
             root["error"] = msg;
         }
 
-        auto len = root.measureLength();
+        auto len = root.size();
         if (outputBuffer.size() <= len) {
             outputBuffer.resize(len + 1);
         }
-        root.printTo(outputBuffer.data(), outputBuffer.size());
+        serializeJson(root, outputBuffer.data(), outputBuffer.size());
 
         setContentLength(CONTENT_LENGTH_UNKNOWN);
         send(retCode, "application/json", "");
@@ -202,7 +202,7 @@ private:
     CodeRegistry &registry;
     IRInterface &irInterface;
     std::vector<char> outputBuffer;
-    DynamicJsonBuffer jsonBuffer;
+    DynamicJsonDocument doc;
     int currentParamIndex;
 };
 
