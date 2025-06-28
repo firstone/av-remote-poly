@@ -22,7 +22,7 @@ def device_factory(config_data):
         driver = Mock()
         primaryDevice = Mock()
         poly = MagicMock()
-        driver.getCommand = MagicMock(return_value=data['commands'][cmd_key])
+        driver.get_command = MagicMock(return_value=data['commands'][cmd_key])
         if not has_command:
             driver.hasCommand = Mock(return_value=False)
         driver.get_data = MagicMock(return_value=return_value)

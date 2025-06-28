@@ -30,7 +30,7 @@ class RemoteDevice(Node):
             poly_data = config['poly'].get('commands', {}).get(command_name)
             if poly_data and 'driver' in poly_data:
                 full_command_name = self.prefix + command_name + self.suffix
-                command = device_driver.getCommand(full_command_name)
+                command = device_driver.get_command(full_command_name)
                 driver_name = poly_data['driver']['name']
                 self.drivers.append({
                     'driver': driver_name,
