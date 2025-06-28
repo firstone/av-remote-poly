@@ -24,7 +24,7 @@ def device_factory(config_data):
         poly = MagicMock()
         driver.get_command = MagicMock(return_value=data['commands'][cmd_key])
         if not has_command:
-            driver.hasCommand = Mock(return_value=False)
+            driver.has_command = Mock(return_value=False)
         driver.get_data = MagicMock(return_value=return_value)
         device = RemoteDevice(poly, primaryDevice, None, None, None, "test device", data, driver)
 

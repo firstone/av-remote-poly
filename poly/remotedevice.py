@@ -41,9 +41,9 @@ class RemoteDevice(Node):
                     self.driver_setters[driver_name] = RemoteDevice.Driver(full_command_name,
                                                                            poly_data['driver'].get('sends',
                                                                                                    False), None)
-                elif 'input' in poly_data['driver'] and device_driver.hasCommand(self.prefix +
-                                                                                 poly_data['driver']['input'] +
-                                                                                 self.suffix):
+                elif 'input' in poly_data['driver'] and device_driver.has_command(self.prefix +
+                                                                                  poly_data['driver']['input'] +
+                                                                                  self.suffix):
                     self.driver_setters[driver_name] = RemoteDevice.Driver(
                         self.prefix + poly_data['driver']['input'] + self.suffix,
                         poly_data['driver'].get('sends', False), None)
