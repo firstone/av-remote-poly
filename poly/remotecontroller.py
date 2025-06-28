@@ -66,7 +66,7 @@ class RemoteController(udi_interface.node.Node):
             else:
                 for deviceDriverName, driverData in self.config_data['drivers'].items():
                     if self.get_device_driver(deviceDriverName,
-                                              driverData).processParams(driverData, {driverName: paramList}):
+                                              driverData).process_params(driverData, {driverName: paramList}):
                         needChanges = True
                         for deviceDriver in self.device_driver_instances[deviceDriverName].values():
                             deviceDriver.configure(driverData)
@@ -212,7 +212,7 @@ class RemoteController(udi_interface.node.Node):
 
         for driverName, driverData in self.config_data['drivers'].items():
             LOGGER.debug(f'Running discovery for {driverName}')
-            devices = self.get_device_driver(driverName, driverData).discoverDevices(LOGGER)
+            devices = self.get_device_driver(driverName, driverData).discover_devices(LOGGER)
             if devices is not None:
                 discoveredDevices.update(devices)
 

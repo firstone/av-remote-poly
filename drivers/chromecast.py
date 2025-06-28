@@ -22,18 +22,20 @@ class Chromecast(BaseDriver):
 
         logger.info('Loaded %s driver', self.__class__.__name__)
 
-    def send_command_raw(self, commandName, command, args=None):
-        if commandName == 'start_app':
+    def send_command_raw(self, command_name, command, args=None):
+        if command_name == 'start_app':
             if args == '':
                 return ''
-            elif not args:
-                return self.send_command_raw('quit_app', self.config['commands']['quit_app'])
-        elif commandName == 'toggle_mute':
-            currentMute = self.send_command_raw('current_mute', self.config['commands']['current_mute'])
-            return self.send_command_raw('set_mute', self.config['commands']['set_mute'], not currentMute)
 
-        controllerName = command.get('controller')
-        controller = getattr(self.cast, controllerName) if controllerName else self.cast
+            if not args:
+                return self.send_command_raw('quit_app', self.config['commands']['quit_app'])
+
+        elif command_name == 'toggle_mute':
+            current_mute = self.send_command_raw('current_mute', self.config['commands']['current_mute'])
+            return self.send_command_raw('set_mute', self.config['commands']['set_mute'], not current_mute)
+
+        controller_name = command.get('controller')
+        controller = getattr(self.cast, controller_name) if controller_name else self.cast
         attr = getattr(controller, command['code'])
 
         try:
@@ -41,13 +43,13 @@ class Chromecast(BaseDriver):
                 result = getattr(attr, command['argKey'], '')
                 return result
             elif args is not None:
-                if type(args) == list:
+                if isinstance(args, list):
                     attr(*args)
                 else:
                     attr(args)
             else:
                 attr()
-        except:
+        except Exception:
             self.disconnect()
 
         return ''
@@ -79,7 +81,7 @@ class Chromecast(BaseDriver):
     def disconnect(self):
         try:
             self.cast.disconnect()
-        except:
+        except Exception:
             pass
         self.cast = None
 
@@ -104,9 +106,9 @@ class Chromecast(BaseDriver):
             for app in apps:
                 values.append({'value': app['name'], 'param': app['app_id']})
 
-            defaultApp = config.get('defaultApp')
-            if defaultApp:
-                values.append(defaultApp)
+            default_app = config.get('defaultApp')
+            if default_app:
+                values.append(default_app)
 
             if config['values'].get(Chromecast.APPS_KEY_NAME) != values:
                 config['values'][Chromecast.APPS_KEY_NAME] = values
@@ -121,8 +123,8 @@ class Chromecast(BaseDriver):
     @staticmethod
     def discover_devices(logger):
         if not Chromecast.enabled:
-            logger.debug(f'Chromecast disabled')
-            return
+            logger.debug('Chromecast disabled')
+            return None
 
         casts, browser = pychromecast.get_chromecasts(Chromecast.CAST_CONNECT_TRIES)
         stop_discovery(browser)

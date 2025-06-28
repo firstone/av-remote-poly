@@ -89,7 +89,7 @@ def RESTRemote():
         module = importlib.import_module('drivers.' + driverName)
         driver = getattr(module, driverData.get('moduleName', driverName.capitalize()))
         drivers[driverName] = driver
-        deviceData = driver.discoverDevices(logger)
+        deviceData = driver.discover_devices(logger)
         if deviceData is not None:
             devicesConfig.update(deviceData)
 
