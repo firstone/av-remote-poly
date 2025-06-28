@@ -33,7 +33,7 @@ class WebOS(BaseDriver):
         self.connected = True
         if self.clientKey:
             self.config['registerCommand'].update(self.clientKey)
-        self.sendCommandRaw('register', self.config['registerCommand'], None, False)
+        self.send_command_raw('register', self.config['registerCommand'], None, False)
 
     def on_close(self, code, reason=None):
         self.connected = False
@@ -74,7 +74,7 @@ class WebOS(BaseDriver):
         except:
             pass
 
-    def sendCommandRaw(self, commandName, command, args=None, shouldWait=True):
+    def send_command_raw(self, commandName, command, args=None, shouldWait=True):
         if commandName == 'power_on':
             mac = self.config.get('mac')
             if mac is None:
@@ -89,13 +89,13 @@ class WebOS(BaseDriver):
                 wakeonlan.send_magic_packet(mac, ip_address=ip)
             return ''
         elif commandName == 'toggle_mute':
-            output = self.sendCommandRaw('status', self.config['commands']['status'])
+            output = self.send_command_raw('status', self.config['commands']['status'])
 
             if 'error' in output:
                 return output
 
-            return self.sendCommandRaw('mute', self.config['commands']['mute'],
-                                       False if output['payload']['mute'] else True)
+            return self.send_command_raw('mute', self.config['commands']['mute'],
+                                         False if output['payload']['mute'] else True)
 
         if not self.connected:
             try:
@@ -152,4 +152,4 @@ class WebOS(BaseDriver):
                 return
             param = payload.get(command['argKey'])
             if param is not None:
-                result['result'] = self.paramParser.translate_param(command, param)
+                result['result'] = self.param_parser.translate_param(command, param)

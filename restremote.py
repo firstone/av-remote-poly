@@ -15,24 +15,20 @@ logger = logging.getLogger('RESTRemote')
 
 
 @app.route('/<string:deviceName>/<string:commandName>', methods=['PUT'])
-@app.route('/<string:deviceName>/<string:commandName>/<string:args>',
-           methods=['PUT'])
+@app.route('/<string:deviceName>/<string:commandName>/<string:args>', methods=['PUT'])
 def execute_command(deviceName, commandName, args=None):
     try:
-        return json.dumps(
-            getattr(devices[deviceName], 'executeCommand')(commandName, args))
+        return json.dumps(getattr(devices[deviceName], 'execute_command')(commandName, args))
     except Exception as e:
         logger.exception('Exception: %s', e)
         abort(400)
 
 
 @app.route('/<string:deviceName>/<string:commandName>', methods=['GET'])
-@app.route('/<string:deviceName>/<string:commandName>/<string:args>',
-           methods=['GET'])
+@app.route('/<string:deviceName>/<string:commandName>/<string:args>', methods=['GET'])
 def get_data(deviceName, commandName, args=None):
     try:
-        return json.dumps(
-            getattr(devices[deviceName], 'getData')(commandName, args))
+        return json.dumps(getattr(devices[deviceName], 'get_data')(commandName, args))
     except Exception as e:
         logger.exception('Exception: %s', e)
         abort(400)
@@ -43,10 +39,7 @@ def get_device_list():
     try:
         deviceList = []
         for deviceName, device in devices.items():
-            deviceList.append({
-                'name': deviceName,
-                'is_connected': device.is_connected()
-            })
+            deviceList.append({'name': deviceName, 'is_connected': device.is_connected()})
 
         return json.dumps({'devices': deviceList})
     except Exception as e:
@@ -55,9 +48,7 @@ def get_device_list():
 
 
 def RESTRemote():
-    parser = argparse.ArgumentParser(
-        prog='RESTRemote',
-        description='REST protocol server for device communications')
+    parser = argparse.ArgumentParser(prog='RESTRemote', description='REST protocol server for device communications')
     parser.add_argument(
         '-c',
         '--config',
@@ -96,8 +87,7 @@ def RESTRemote():
     devicesConfig = configData.get('devices', {})
     for driverName, driverData in configData['drivers'].items():
         module = importlib.import_module('drivers.' + driverName)
-        driver = getattr(module,
-                         driverData.get('moduleName', driverName.capitalize()))
+        driver = getattr(module, driverData.get('moduleName', driverName.capitalize()))
         drivers[driverName] = driver
         deviceData = driver.discoverDevices(logger)
         if deviceData is not None:
@@ -107,20 +97,16 @@ def RESTRemote():
     for deviceName, deviceData in configData['devices'].items():
         if deviceData.get('enable', True):
             driverName = deviceData['driver']
-            logger.info('Loading device %s using driver %s', deviceName,
-                        driverName)
+            logger.info('Loading device %s using driver %s', deviceName, driverName)
             driverData = configData['drivers'][driverName]
             deviceData.update(driverData)
-            deviceData.get('values', {}).update(
-                configData.get('driverConfig', {}).get(driverName,
-                                                       {}).get('values', {}))
+            deviceData.get('values',
+                           {}).update(configData.get('driverConfig', {}).get(driverName, {}).get('values', {}))
             utils.flatten_commands(deviceData)
             devices[deviceName] = drivers[driverName](deviceData, logger)
             devices[deviceName].start()
 
-    app.run(host=configData.get('bindHost', '0.0.0.0'),
-            port=configData.get('port', 5000),
-            debug=args.debug)
+    app.run(host=configData.get('bindHost', '0.0.0.0'), port=configData.get('port', 5000), debug=args.debug)
 
 
 if __name__ == '__main__':

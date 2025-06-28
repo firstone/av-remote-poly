@@ -20,27 +20,27 @@ def driver(config):
 
 
 def test_simple(config, driver):
-    driver.sendCommandRaw('command1', config['commands']['command1'])
+    driver.send_command_raw('command1', config['commands']['command1'])
     driver.conn.send.assert_called_with('VL\r\n'.encode())
 
 
 def test_send_with_args(config, driver):
-    driver.sendCommandRaw('command1', config['commands']['command1'], '12')
+    driver.send_command_raw('command1', config['commands']['command1'], '12')
     driver.conn.send.assert_called_with('VL12\r\n'.encode())
 
 
 def test_send_float_even(config, driver):
-    driver.sendCommandRaw('command3', config['commands']['command3'], '12')
+    driver.send_command_raw('command3', config['commands']['command3'], '12')
     driver.conn.send.assert_called_with('MV12\r\n'.encode())
 
 
 def test_send_float_fract(config, driver):
-    driver.sendCommandRaw('command3', config['commands']['command3'], '12.0')
+    driver.send_command_raw('command3', config['commands']['command3'], '12.0')
     driver.conn.send.assert_called_with('MV12\r\n'.encode())
 
 
 def test_send_with_args_decimal(config, driver):
-    driver.sendCommandRaw('command1', config['commands']['command1'], '12.5')
+    driver.send_command_raw('command1', config['commands']['command1'], '12.5')
     driver.conn.send.assert_called_with('VL125\r\n'.encode())
 
 

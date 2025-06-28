@@ -10,7 +10,7 @@ from poly.primaryremotedevice import PrimaryRemoteDevice
 from poly.remotedevice import RemoteDevice
 
 
-class RemoteController(udi_interface.Node):
+class RemoteController(udi_interface.node.Node):
 
     def __init__(self, polyglot, config_file, has_devices=False):
         self.config_file = config_file
@@ -183,8 +183,8 @@ class RemoteController(udi_interface.Node):
 
     def is_device_configured(self, device):
         for param in self.config_data['drivers'][device['driver']].get('parameters', []):
-            if param.get('isRequired', False) and (device[param['name']] == 0 or device[param['name']] == '0' or
-                                                   device[param['name']] == ''):
+            if param.get('isRequired', False) and (device[param['name']] == 0 or device[param['name']] == '0'
+                                                   or device[param['name']] == ''):
                 return False
         return True
 

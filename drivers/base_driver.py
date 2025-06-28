@@ -16,69 +16,72 @@ class BaseDriver(object):
         if data is not None:
             self.config.update(data)
 
-        self.paramParser = ParamParser(self.config, self.use_numeric_key)
-        self.connectionDescription = (self.config.get('hostName', '') + ':' + str(self.config.get('port', 0)))
+        self.param_parser = ParamParser(self.config, self.use_numeric_key)
+        self.connection_desc = (self.config.get('hostName', '') + ':' + str(self.config.get('port', 0)))
 
     def start(self):
         try:
             if not self.connected:
                 self.connect()
-        except:
-            self.logger.exception('Connection to %s failed', self.connectionDescription)
+        except Exception:
+            self.logger.exception('Connection to %s failed', self.connection_desc)
 
     def connect(self):
+        pass
+
+    def disconnect(self):
         pass
 
     def is_connected(self):
         try:
             if not self.connected:
                 self.connect()
-        except:
+        except Exception:
             try:
                 self.disconnect()
-            except:
+            except Exception:
                 pass
 
         return self.connected
 
-    def hasCommand(self, commandName):
-        return commandName in self.config['commands']
+    def has_command(self, command_name):
+        return command_name in self.config['commands']
 
-    def getCommand(self, commandName):
-        return self.config['commands'].get(commandName)
+    def get_command(self, command_ame):
+        return self.config['commands'].get(command_ame)
 
-    def getData(self, commandName, args=None):
-        if commandName == 'commands':
-            commandList = []
-            for commandName, command in self.config['commands'].items():
-                commandList.append({'name': commandName, 'method': 'GET' if command.get('result', False) else 'PUT'})
-            return {'driver': self.__class__.__name__, 'commands': commandList}
+    def get_data(self, command_name, args=None):
+        if command_name == 'commands':
+            command_list = []
+            for cmd_name, command in self.config['commands'].items():
+                command_list.append({'name': cmd_name, 'method': 'GET' if command.get('result', False) else 'PUT'})
+            return {'driver': self.__class__.__name__, 'commands': command_list}
 
-        command = self.config['commands'][commandName]
+        command = self.config['commands'][command_name]
         if not command.get('result'):
-            raise Exception('Invalid command for ' + __name__ + ' and method: ' + commandName)
+            raise RuntimeError('Invalid command for ' + __name__ + ' and method: ' + command_name)
 
         result = {
             'driver': self.__class__.__name__,
-            'command': commandName,
+            'command': command_name,
         }
 
         try:
-            result['output'] = self.sendCommandRaw(commandName, command)
-            self.process_result(commandName, command, result)
+            result['output'] = self.send_command_raw(command_name, command)
+            self.process_result(command_name, command, result)
         except:
             self.connected = False
             raise
         return result
 
-    def sendCommandRaw(self, commandName, command, args=None):
+    def send_command_raw(self, command_name, command, args=None):
         pass
 
-    def executeCommand(self, commandName, args=None):
-        command = self.config['commands'][commandName]
+    def execute_command(self, command_name, args=None):
+        command = self.config['commands'][command_name]
 
         if args is not None:
-            args = self.paramParser.translate_param(command, str(args))
+            args = self.param_parser.translate_param(command, str(args))
 
             if command.get('acceptsBool') and type(args) is not bool:
                 args = args == 'true' or args == 'on'
@@ -93,7 +96,7 @@ class BaseDriver(object):
 
         result = {
             'driver': __name__,
-            'command': commandName,
+            'command': command_name,
         }
 
         try:
@@ -102,12 +105,12 @@ class BaseDriver(object):
 
                 for sub_command in commands[:-1]:
                     sub_command['has_more'] = True
-                    self.sendCommandRaw(commandName, sub_command, args)
+                    self.send_command_raw(command_name, sub_command, args)
 
-                result['output'] = self.sendCommandRaw(commandName, commands[-1], args)
+                result['output'] = self.send_command_raw(command_name, commands[-1], args)
             else:
-                result['output'] = self.sendCommandRaw(commandName, command, args)
-            self.process_result(commandName, command, result)
+                result['output'] = self.send_command_raw(command_name, command, args)
+            self.process_result(command_name, command, result)
         except:
             self.connected = False
             raise
@@ -117,7 +120,7 @@ class BaseDriver(object):
 
         return result
 
-    def process_result(self, commandName, command, result):
+    def process_result(self, command_name, command, result):
         output = None
         try:
             if command.get('acceptsNumber'):
@@ -129,17 +132,17 @@ class BaseDriver(object):
             elif command.get('acceptsHex'):
                 output = int(result['output'], 16)
             else:
-                output = self.paramParser.translate_param(command, result['output'], None, False)
-        except:
+                output = self.param_parser.translate_param(command, result['output'], None, False)
+        except Exception:
             pass
 
         if output is not None:
             result['result'] = output
 
     @staticmethod
-    def processParams(config, param):
+    def process_params(config, param):
         return False
 
     @staticmethod
-    def discoverDevices(logger):
+    def discover_devices(logger):
         return None

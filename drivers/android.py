@@ -62,7 +62,7 @@ class Android(BaseDriver):
 
         return result
 
-    def sendCommandRaw(self, commandName, command, args=None):
+    def send_command_raw(self, commandName, command, args=None):
         if not self.connected:
             self.connect()
 

@@ -981,6 +981,226 @@ drivers:
             code: SL3QSTN
             result: true
             value_set: inputs_reverse
+  onkyo_avr_new:
+    description: Onkyo AVR (New)
+    moduleName: OnkyoAVRNew
+    timeout: 10
+    poly:
+      hint: [1, 6, 5, 0]
+    parameters:
+      - name: name
+        title: Name
+        desc: Display name in ISY Admin Console
+        defaultValue: ''
+      - name: hostName
+        title: Host Name
+        defaultValue: ''
+        isRequired: true
+      - name: port
+        title: Port
+        defaultValue: 60128
+        type: NUMBER
+    values:
+      on_off:
+        - value: 'off'
+          param: '00'
+        - value: 'on'
+          param: '01'
+      up_down:
+        - value: up
+          param: UP
+        - value: down
+          param: DOWN
+      inputs:
+        - value: vcr_dvr
+          param: '00'
+        - value: cbl_sat
+          param: '01'
+        - value: game_tv
+          param: '02'
+        - value: aux1
+          param: '03'
+        - value: aux2
+          param: '04'
+        - value: pc
+          param: '05'
+        # - value: video7
+        #   param: '06'
+        # - value: extra1
+        #   param: '07'
+        # - value: extra2
+        #   param: '08'
+        # - value: extra3
+        #   param: '09'
+        - value: dvd
+          param: '10'
+        - value: stream
+          param: '11'
+        - value: tv
+          param: '12'
+        # - value: tape
+        #   param: '20'
+        # - value: tape2
+        #   param: '21'
+        - value: phono
+          param: '22'
+        - value: cd
+          param: '23'
+        - value: fm
+          param: '24'
+        - value: am
+          param: '25'
+        - value: tuner
+          param: '26'
+        - value: music_server
+          param: '27'
+        - value: net_radio
+          param: '28'
+        - value: usb_front
+          param: '29'
+        - value: usb_rear
+          param: '2A'
+        - value: net
+          param: '2B'
+        - value: usb_toggle
+          param: '2C'
+        - value: airplay
+          param: '2D'
+        - value: bluetooth
+          param: '2E'
+        - value: usb_dac
+          param: '2F'
+        - value: multi_ch
+          param: '30'
+        - value: xm
+          param: '31'
+        - value: sirius
+          param: '32'
+        - value: dab
+          param: '33'
+        - value: universal
+          param: '40'
+        # - value: line
+        #   param: '41'
+        # - value: line2
+        #   param: '42'
+        # - value: optical
+        #   param: '44'
+        # - value: coax
+        #   param: '45'
+        - value: hdmi5
+          param: '55'
+        - value: hdmi6
+          param: '56'
+        - value: hdmi7
+          param: '57'
+    commands:
+      toggle_mute:
+        code: AMTTG
+      mute:
+        code: AMT
+        value_set: on_off
+      current_mute:
+        code: AMTQSTN
+        value_set: on_off_reverse
+        result: true
+      power:
+        code: PWR
+        value_set: on_off
+      current_power:
+        code: PWRQSTN
+        value_set: on_off_reverse
+        result: true
+      volume:
+        code: MVL
+        value_set: up_down
+      current_volume:
+        code: MVLQSTN
+        result: true
+        acceptsHex: true
+      set_volume:
+        code: MVL
+        acceptsHex: true
+      select_input:
+        code: SLI
+        value_set: inputs
+      current_input_source:
+        code: SLIQSTN
+        result: true
+        value_set: inputs_reverse
+    commandGroups:
+      zone2:
+        suffix: _z2
+        commands:
+          toggle_mute:
+            code: ZMTTG
+          mute:
+            code: ZMT
+            value_set: on_off
+          current_mute:
+            code: ZMTQSTN
+            value_set: on_off_reverse
+            result: true
+          power:
+            code: ZPW
+            value_set: on_off
+          current_power:
+            code: ZPWQSTN
+            value_set: on_off_reverse
+            result: true
+          volume:
+            code: ZVL
+            value_set: up_down
+          current_volume:
+            code: ZVLQSTN
+            result: true
+            acceptsHex: true
+          set_volume:
+            code: ZVL
+            acceptsHex: true
+          select_input:
+            code: SLZ
+            value_set: inputs
+          current_input_source:
+            code: SLZQSTN
+            result: true
+            value_set: inputs_reverse
+      zone3:
+        suffix: _z3
+        commands:
+          toggle_mute:
+            code: MT3TG
+          mute:
+            code: MT3
+            value_set: on_off
+          current_mute:
+            code: MT3QSTN
+            value_set: on_off_reverse
+            result: true
+          power:
+            code: PW3
+            value_set: on_off
+          current_power:
+            code: PW3QSTN
+            value_set: on_off_reverse
+            result: true
+          volume:
+            code: VL3
+            value_set: up_down
+          current_volume:
+            code: VL3QSTN
+            result: true
+            acceptsHex: true
+          set_volume:
+            code: VL3
+            acceptsHex: true
+          select_input:
+            code: SL3
+            value_set: inputs
+          current_input_source:
+            code: SL3QSTN
+            result: true
+            value_set: inputs_reverse
   esp8266:
     description: ESP8266 IR
     moduleName: ESP8266
@@ -1197,6 +1417,32 @@ poly:
             max: 80
             step: 1
             prec: 0
+          driver:
+            name: SVOL
+            description: Volume
+            input: current_volume
+        power:
+          driver:
+            name: GV0
+            input: current_power
+        mute:
+          driver:
+            name: GV1
+            input: current_mute
+        select_input:
+          driver:
+            name: GV2
+            description: Input
+            input: current_input_source
+    onkyo_avr_new:
+      commands:
+        set_volume:
+          param:
+            uom: 12
+            min: 0
+            max: 100
+            step: .5
+            prec: 1
           driver:
             name: SVOL
             description: Volume

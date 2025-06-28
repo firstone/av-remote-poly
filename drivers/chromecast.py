@@ -22,15 +22,15 @@ class Chromecast(BaseDriver):
 
         logger.info('Loaded %s driver', self.__class__.__name__)
 
-    def sendCommandRaw(self, commandName, command, args=None):
+    def send_command_raw(self, commandName, command, args=None):
         if commandName == 'start_app':
             if args == '':
                 return ''
             elif not args:
-                return self.sendCommandRaw('quit_app', self.config['commands']['quit_app'])
+                return self.send_command_raw('quit_app', self.config['commands']['quit_app'])
         elif commandName == 'toggle_mute':
-            currentMute = self.sendCommandRaw('current_mute', self.config['commands']['current_mute'])
-            return self.sendCommandRaw('set_mute', self.config['commands']['set_mute'], not currentMute)
+            currentMute = self.send_command_raw('current_mute', self.config['commands']['current_mute'])
+            return self.send_command_raw('set_mute', self.config['commands']['set_mute'], not currentMute)
 
         controllerName = command.get('controller')
         controller = getattr(self.cast, controllerName) if controllerName else self.cast
@@ -84,7 +84,7 @@ class Chromecast(BaseDriver):
         self.cast = None
 
     @staticmethod
-    def processParams(config, param):
+    def process_params(config, param):
         config_changed = False
         config.setdefault('values', {})
 
@@ -119,7 +119,7 @@ class Chromecast(BaseDriver):
         return config_changed
 
     @staticmethod
-    def discoverDevices(logger):
+    def discover_devices(logger):
         if not Chromecast.enabled:
             logger.debug(f'Chromecast disabled')
             return

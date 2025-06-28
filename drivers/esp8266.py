@@ -19,7 +19,7 @@ class ESP8266(BaseDriver):
         if response.ok:
             self.connected = json.loads(response.content)['result'] == 'success'
 
-    def sendCommandRaw(self, commandName, command, args=None):
+    def send_command_raw(self, commandName, command, args=None):
         commandStr = command.get('code', commandName)
         if args:
             commandStr += args

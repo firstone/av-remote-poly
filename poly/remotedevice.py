@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import time
-from udi_interface import LOGGER, Node
+from udi_interface import LOGGER
+from udi_interface.node import Node
 
 
 class RemoteDevice(Node):
@@ -47,9 +48,9 @@ class RemoteDevice(Node):
                         self.prefix + poly_data['driver']['input'] + self.suffix,
                         poly_data['driver'].get('sends', False), None)
 
-            if (not command_data.get('result') and not command_data.get('acceptsNumber') and
-                    not command_data.get('acceptsHex') and not command_data.get('acceptsPct') and
-                    not command_data.get('acceptsFloat') and 'value_set' not in command_data):
+            if (not command_data.get('result') and not command_data.get('acceptsNumber')
+                    and not command_data.get('acceptsHex') and not command_data.get('acceptsPct')
+                    and not command_data.get('acceptsFloat') and 'value_set' not in command_data):
                 self.command_list.append(command_name)
 
         hint = config['poly'].get('hint')
@@ -71,7 +72,7 @@ class RemoteDevice(Node):
     def execute_command(self, command):
         try:
             LOGGER.debug('Device %s executing command %s', self.name, command['cmd'])
-            self.device_driver.executeCommand(self.prefix + command['cmd'] + self.suffix, command.get('value'))
+            self.device_driver.execute_command(self.prefix + command['cmd'] + self.suffix, command.get('value'))
             time.sleep(1)
             self.refresh_state()
         except:
@@ -83,7 +84,7 @@ class RemoteDevice(Node):
             try:
                 for driver_name, driver_data in self.driver_setters.items():
                     LOGGER.debug(f'Refreshing driver {driver_name} command {driver_data.command_name}')
-                    output = self.device_driver.getData(driver_data.command_name)
+                    output = self.device_driver.get_data(driver_data.command_name)
                     result = output.get('result')
                     if result is not None:
                         self.setDriver(driver_name, float(result))

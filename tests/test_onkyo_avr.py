@@ -29,7 +29,7 @@ def test_simple(config, driver_factory):
 
     driver = driver_factory(response)
     driver.connected = True
-    driver.sendCommandRaw('command1', config['commands']['command1'], '01')
+    driver.send_command_raw('command1', config['commands']['command1'], '01')
     message = struct.Struct(">4sIIB3x8s")
     driver.conn.send.assert_called_with(message.pack('ISCP'.encode(), 16, 8, 1, '!1MVL01\r'.encode()))
 

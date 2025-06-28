@@ -31,7 +31,7 @@ class TivoIP(BaseDriver):
         self.conn.close()
         self.conn = None
 
-    def sendCommandRaw(self, commandName, command, args=None):
+    def send_command_raw(self, commandName, command, args=None):
         result = ''
         try:
             self.do_connect()
