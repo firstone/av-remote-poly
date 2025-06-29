@@ -17,7 +17,7 @@ class OnkyoAVR(BaseDriver):
     SEARCH_SUFFIX = 'QSTN'
 
     def __init__(self, controller, config, logger, use_numeric_key=False):
-        super(OnkyoAVR, self).__init__(controller, config, logger, use_numeric_key)
+        super().__init__(controller, config, logger, use_numeric_key)
 
         self.conn = None
         logger.info('Loaded %s driver', self.__class__.__name__)
@@ -39,6 +39,8 @@ class OnkyoAVR(BaseDriver):
 
         result = ''
         try:
+            self.logger.debug("%s executing command %s (%s, %s)", self.__class__.__name__, command_name,
+                              command['code'], args)
             command_str = command['code']
             if args:
                 command_str += args

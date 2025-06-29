@@ -1,4 +1,5 @@
 from drivers.onkyo_avr import OnkyoAVR
+from drivers.base_driver import BaseDriver
 
 
 class OnkyoAVRNew(OnkyoAVR):
@@ -12,4 +13,4 @@ class OnkyoAVRNew(OnkyoAVR):
         if command_name.startswith('current_volume'):
             result['output'] = float(result['output']) / 2
 
-        super().process_result(command_name, command, result)
+        BaseDriver.process_result(self, command_name, command, result)
