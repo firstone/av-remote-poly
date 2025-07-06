@@ -75,7 +75,7 @@ class RemoteDevice(Node):
             self.device_driver.execute_command(self.prefix + command['cmd'] + self.suffix, command.get('value'))
             time.sleep(1)
             self.refresh_state()
-        except:
+        except Exception:
             LOGGER.exception('Error sending command to ' + self.name)
 
     def refresh_state(self):
@@ -86,10 +86,11 @@ class RemoteDevice(Node):
                     LOGGER.debug(f'Refreshing driver {driver_name} command {driver_data.command_name}')
                     output = self.device_driver.get_data(driver_data.command_name)
                     result = output.get('result')
+                    LOGGER.debug(f'Received response {driver_name} command {driver_data.command_name}: {result}')
                     if result is not None:
                         self.setDriver(driver_name, float(result))
                         if driver_data.can_send and driver_data.last_value != result:
                             driver_data.last_value = result
                             self.reportCmd(f'{driver_name}')
-            except:
+            except Exception:
                 LOGGER.exception('Error refreshing %s device state', self.name)

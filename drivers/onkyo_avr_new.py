@@ -10,7 +10,7 @@ class OnkyoAVRNew(OnkyoAVR):
         if result['output'] is None or len(result['output']) == 0:
             return
 
-        if command_name.startswith('current_volume'):
-            result['output'] = float(result['output']) / 2
-
         BaseDriver.process_result(self, command_name, command, result)
+
+        if command_name.startswith('current_volume'):
+            result['result'] = float(result['result']) / 2

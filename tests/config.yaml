@@ -205,6 +205,9 @@ onkyo:
             code: MVLQSTN
             result: true
             acceptsHex: true
+        current_volume:
+            code: MVL
+            acceptsHex: true
 numberParams:
     values:
         bool_map:

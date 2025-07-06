@@ -37,17 +37,17 @@ def desc_to_name(desc):
     return name
 
 
-def create_dir(fileName):
-    if not os.path.exists(os.path.dirname(fileName)):
+def create_dir(file_name):
+    if not os.path.exists(os.path.dirname(file_name)):
         try:
-            os.makedirs(os.path.dirname(fileName))
+            os.makedirs(os.path.dirname(file_name))
         except OSError as error:
             if error.errno != errno.EEXIST:
                 raise
 
 
-def get_last_output(command, output, value_sets, searchSuffix):
-    prefix = command['code'].replace(searchSuffix, '')
+def get_last_output(command, output, value_sets, search_suffix):
+    prefix = command['code'].replace(search_suffix, '')
     keys = value_sets.get(command.get('value_set', ''), {})
     output.reverse()
 
@@ -58,13 +58,13 @@ def get_last_output(command, output, value_sets, searchSuffix):
                 try:
                     float(value)
                     return value
-                except:
+                except Exception:
                     pass
             if command.get('acceptsHex', False):
                 try:
                     int(value, 16)
                     return value
-                except:
+                except Exception:
                     pass
             elif keys.get(value) is not None:
                 return value
