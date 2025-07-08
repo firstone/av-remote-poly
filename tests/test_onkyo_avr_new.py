@@ -24,6 +24,16 @@ def driver_factory(config):
     return inner
 
 
+def test_simple(config, driver_factory):
+    response = 'ISCP\x00\x00\x00\x10\x00\x00\x00\n\x01\x00\x00\x00!1MVL57\x1a\r\n'
+
+    driver = driver_factory(response)
+    driver.connected = True
+    driver.send_command_raw('set_volume', config['commands']['set_volume'], '43.5')
+    message = struct.Struct(">4sIIB3x8s")
+    driver.conn.send.assert_called_with(message.pack('ISCP'.encode(), 16, 8, 1, '!1MVL57\r'.encode()))
+
+
 def test_output(config, driver_factory):
     response = 'ISCP\x00\x00\x00\x10\x00\x00\x00\n\x01\x00\x00\x00!1MVL57\x1a\r\n'
 

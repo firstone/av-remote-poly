@@ -1024,24 +1024,12 @@ drivers:
           param: '04'
         - value: pc
           param: '05'
-        # - value: video7
-        #   param: '06'
-        # - value: extra1
-        #   param: '07'
-        # - value: extra2
-        #   param: '08'
-        # - value: extra3
-        #   param: '09'
         - value: dvd
           param: '10'
         - value: stream
           param: '11'
         - value: tv
           param: '12'
-        # - value: tape
-        #   param: '20'
-        # - value: tape2
-        #   param: '21'
         - value: phono
           param: '22'
         - value: cd
@@ -1109,10 +1097,10 @@ drivers:
       current_volume:
         code: MVLQSTN
         result: true
-        acceptsHex: true
+        acceptsNumber: true
       set_volume:
         code: MVL
-        acceptsHex: true
+        acceptsNumber: true
       select_input:
         code: SLI
         value_set: inputs
@@ -1146,10 +1134,10 @@ drivers:
           current_volume:
             code: ZVLQSTN
             result: true
-            acceptsHex: true
+            acceptsNumber: true
           set_volume:
             code: ZVL
-            acceptsHex: true
+            acceptsNumber: true
           select_input:
             code: SLZ
             value_set: inputs
