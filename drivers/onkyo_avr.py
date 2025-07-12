@@ -62,7 +62,7 @@ class OnkyoAVR(BaseDriver):
         return data + str_data.encode()
 
     def decode_result(self, command_name, command, result):
-        if len(result['output']) == 0:
+        if result['output'] is None or len(result['output']) == 0:
             return
 
         result_buf = result['output'].encode()
