@@ -1097,10 +1097,10 @@ drivers:
       current_volume:
         code: MVLQSTN
         result: true
-        acceptsNumber: true
+        acceptsFloat: true
       set_volume:
         code: MVL
-        acceptsNumber: true
+        acceptsFloat: true
       select_input:
         code: SLI
         value_set: inputs
@@ -1134,10 +1134,10 @@ drivers:
           current_volume:
             code: ZVLQSTN
             result: true
-            acceptsNumber: true
+            acceptsFloat: true
           set_volume:
             code: ZVL
-            acceptsNumber: true
+            acceptsFloat: true
           select_input:
             code: SLZ
             value_set: inputs

@@ -38,7 +38,8 @@ def test_output(config, driver_factory):
     response = 'ISCP\x00\x00\x00\x10\x00\x00\x00\n\x01\x00\x00\x00!1MVL14\x1a\r\n'
 
     driver = driver_factory(response)
-    result = {'output': response}
+    driver.connected = True
+    result = {'output': driver.send_command_raw('command1', config['commands']['command2'], '01')}
     driver.process_result('command2', config['commands']['command2'], result)
     assert result['result'] == 20
 
@@ -58,7 +59,8 @@ def test_long_response(config, driver_factory):
                 'ISCP\x00\x00\x00\x10\x00\x00\x00\n\x01\x00\x00\x00!1SLI23\x1a\r\n')
 
     driver = driver_factory(response)
-    result = {'output': response}
+    driver.connected = True
+    result = {'output': driver.send_command_raw('command1', config['commands']['command2'], '01')}
     driver.process_result('command2', config['commands']['command2'], result)
     assert result['result'] == 42
 

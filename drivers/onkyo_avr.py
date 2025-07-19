@@ -15,6 +15,7 @@ class OnkyoAVR(BaseDriver):
     RESPONSE_DATA_OFFSET = ISCP_HEADER.size + len(DESTINATION_UNIT_TYPE) + CMD_LEN
     RECEIVE_BUFFER_SIZE = 1024
     SEARCH_SUFFIX = 'QSTN'
+    RETRY_COUNT = 3
 
     def __init__(self, controller, config, logger, use_numeric_key=False):
         super().__init__(controller, config, logger, use_numeric_key)
@@ -39,6 +40,7 @@ class OnkyoAVR(BaseDriver):
 
         result = ''
         try:
+            cur_retry = 0
             self.logger.debug("%s executing command %s (%s, %s)", self.__class__.__name__, command_name,
                               command['code'], args)
             command_str = command['code']
@@ -47,9 +49,14 @@ class OnkyoAVR(BaseDriver):
             request = self.convert_to_iscp(command_str)
             self.logger.debug("%s sending %s", self.__class__.__name__, request)
             self.conn.send(self.convert_to_iscp(command_str))
-            result_buf = self.conn.recv(OnkyoAVR.RECEIVE_BUFFER_SIZE)
-            self.logger.debug("%s received %s", self.__class__.__name__, result_buf)
-            result = result_buf.decode()
+
+            while cur_retry < OnkyoAVR.RETRY_COUNT:
+                result_buf = self.conn.recv(OnkyoAVR.RECEIVE_BUFFER_SIZE)
+                self.logger.debug("%s received %s", self.__class__.__name__, result_buf)
+                result = self.decode_result(result_buf, command)
+                if result is not None:
+                    break
+                cur_retry += 1
         except socket.timeout:
             pass
 
@@ -61,11 +68,10 @@ class OnkyoAVR(BaseDriver):
                                          OnkyoAVR.ISCP_VERSION)
         return data + str_data.encode()
 
-    def decode_result(self, command_name, command, result):
-        if result['output'] is None or len(result['output']) == 0:
+    def decode_result(self, result_buf, command):
+        if result_buf is None or len(result_buf) == 0:
             return
 
-        result_buf = result['output'].encode()
         results = []
         while len(result_buf) > 0:
             try:
@@ -80,10 +86,8 @@ class OnkyoAVR(BaseDriver):
                                   "Possibly incomplete buffer. Increase receive buffer size")
                 break
 
-        result['output'] = utils.get_last_output(command, results, self.param_parser.value_sets, OnkyoAVR.SEARCH_SUFFIX)
+        return utils.get_last_output(command, results, self.param_parser.value_sets, OnkyoAVR.SEARCH_SUFFIX)
 
     def process_result(self, command_name, command, result):
-        self.decode_result(command_name, command, result)
-
         if result['output'] is not None and len(result['output']) > 0:
             super().process_result(command_name, command, result)

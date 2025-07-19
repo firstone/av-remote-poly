@@ -35,9 +35,19 @@ def test_simple(config, driver_factory):
 
 
 def test_output(config, driver_factory):
-    response = 'ISCP\x00\x00\x00\x10\x00\x00\x00\n\x01\x00\x00\x00!1MVL57\x1a\r\n'
+    response = '57'
 
     driver = driver_factory(response)
     result = {'output': response}
     driver.process_result('current_volume', config['commands']['current_volume'], result)
     assert result['result'] == 43.5
+
+
+def test_execute(config, driver_factory):
+    response = 'ISCP\x00\x00\x00\x10\x00\x00\x00\n\x01\x00\x00\x00!1MVL57\x1a\r\n'
+
+    driver = driver_factory(response)
+    driver.connected = True
+    driver.execute_command('set_volume', '43.5')
+    message = struct.Struct(">4sIIB3x8s")
+    driver.conn.send.assert_called_with(message.pack('ISCP'.encode(), 16, 8, 1, '!1MVL57\r'.encode()))

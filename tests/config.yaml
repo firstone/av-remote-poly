@@ -207,10 +207,10 @@ onkyo:
             acceptsHex: true
         current_volume:
             code: MVL
-            acceptsNumber: true
+            acceptsFloat: true
         set_volume:
             code: MVL
-            acceptsNumber: true
+            acceptsFloat: true
 numberParams:
     values:
         bool_map:

@@ -11,8 +11,6 @@ class OnkyoAVRNew(OnkyoAVR):
         super().send_command_raw(command_name, command, args)
 
     def process_result(self, command_name, command, result):
-        self.decode_result(command_name, command, result)
-
         if result['output'] is None or len(result['output']) == 0:
             return
 
