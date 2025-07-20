@@ -48,7 +48,7 @@ class OnkyoAVR(BaseDriver):
                 command_str += args
             request = self.convert_to_iscp(command_str)
             self.logger.debug("%s sending %s", self.__class__.__name__, request)
-            self.conn.send(self.convert_to_iscp(command_str))
+            self.conn.send(request)
 
             while cur_retry < OnkyoAVR.RETRY_COUNT:
                 self.logger.debug("%s reading response", self.__class__.__name__)

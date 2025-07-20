@@ -193,10 +193,10 @@ denon:
 onkyo:
     values:
         some_map:
-            - value: on
+            - value: 'off'
+              param: '00'
+            - value: 'on'
               param: '01'
-            - value: off
-              param: '02'
     commands:
         command1:
             code: MVL
@@ -205,6 +205,10 @@ onkyo:
             code: MVLQSTN
             result: true
             acceptsHex: true
+        command3:
+            code: AMTQSTN
+            result: true
+            value_set: some_map_reverse
         current_volume:
             code: MVL
             acceptsFloat: true

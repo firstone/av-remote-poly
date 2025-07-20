@@ -8,7 +8,7 @@ class OnkyoAVRNew(OnkyoAVR):
         if command_name.startswith('set_volume') and args is not None:
             args = hex(int(float(args) * 2))[2:].upper()
 
-        super().send_command_raw(command_name, command, args)
+        return super().send_command_raw(command_name, command, args)
 
     def process_result(self, command_name, command, result):
         if result['output'] is None or len(result['output']) == 0:
