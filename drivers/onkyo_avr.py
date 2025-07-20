@@ -51,6 +51,7 @@ class OnkyoAVR(BaseDriver):
             self.conn.send(self.convert_to_iscp(command_str))
 
             while cur_retry < OnkyoAVR.RETRY_COUNT:
+                self.logger.debug("%s reading response", self.__class__.__name__)
                 result_buf = self.conn.recv(OnkyoAVR.RECEIVE_BUFFER_SIZE)
                 self.logger.debug("%s received %s", self.__class__.__name__, result_buf)
                 result = self.decode_result(result_buf, command)
@@ -58,7 +59,7 @@ class OnkyoAVR(BaseDriver):
                     break
                 cur_retry += 1
         except socket.timeout:
-            pass
+            self.logger.debug("%s reading timeout", self.__class__.__name__)
 
         return result
 
@@ -86,6 +87,8 @@ class OnkyoAVR(BaseDriver):
                                   "Possibly incomplete buffer. Increase receive buffer size")
                 break
 
+        self.logger.debug("%s processing results %s using %s", self.__class__.__name__, results,
+                          self.param_parser.value_sets)
         return utils.get_last_output(command, results, self.param_parser.value_sets, OnkyoAVR.SEARCH_SUFFIX)
 
     def process_result(self, command_name, command, result):
